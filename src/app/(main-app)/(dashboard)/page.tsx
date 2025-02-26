@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
+import { GeoJsonData } from "@/lib/types/geojsonDataType";
+
 const Map = dynamic(
   () => import("@/components/Map"),
   { ssr: false }
@@ -9,7 +11,7 @@ const Map = dynamic(
 
 export default function Home () {
     const [currentLayer, setCurrentLayer] = useState<string>("");
-    const [geojsonData, setGeojsonData] = useState<any>(null);
+    const [geojsonData, setGeojsonData] = useState<GeoJsonData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {

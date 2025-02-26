@@ -5,6 +5,8 @@ import "leaflet/dist/leaflet.css";
 import { useEffect } from "react";
 import L from "leaflet";
 
+import { GeoJsonData } from "@/lib/types/geojsonDataType";
+
 const geoJSONStyle = {
   color: "#3388ff",
   weight: 2,
@@ -44,7 +46,7 @@ const onEachFeature = (feature: Feature, layer: Layer) => {
   });
 };
 
-const FitBounds = ({ geojsonData }: { geojsonData: any }) => {
+const FitBounds = ({ geojsonData }: { geojsonData: GeoJsonData | null }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -60,7 +62,7 @@ const FitBounds = ({ geojsonData }: { geojsonData: any }) => {
   return null;
 };
 
-const Map = ({ geojsonData, currentLayer }: { geojsonData: any, currentLayer: string }) => {
+const Map = ({ geojsonData, currentLayer }: { geojsonData: GeoJsonData | null, currentLayer: string }) => {
   return (
     <MapContainer 
       center={[10.7769, 106.7009]}
