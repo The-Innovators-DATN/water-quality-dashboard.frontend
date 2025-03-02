@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import path from "path";
-import fs from "fs/promises"; // Dùng fs/promises để tránh blocking
+import fs from "fs/promises";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -11,7 +11,6 @@ export async function GET(req: Request) {
     }
 
     try {
-        // Đọc đường dẫn từ biến môi trường
         const geojsonPath = process.env.GEOJSON_PATH || "./public/geojson";
         const filePath = path.join(process.cwd(), geojsonPath, `${layer}.geojson`);
 
