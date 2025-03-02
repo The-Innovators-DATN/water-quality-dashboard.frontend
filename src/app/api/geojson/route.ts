@@ -19,6 +19,7 @@ export async function GET(req: Request) {
         const geojsonData = await fs.readFile(filePath, "utf-8");
         return NextResponse.json(JSON.parse(geojsonData), { status: 200 });
     } catch (error) {
+        console.log(error)
         return NextResponse.json({ error: "GeoJSON file not found" }, { status: 404 });
     }
 }
