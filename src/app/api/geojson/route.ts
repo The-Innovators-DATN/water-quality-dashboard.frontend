@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const layer = searchParams.get("layer");
@@ -17,7 +19,6 @@ export async function GET(req: Request) {
         const geojsonData = await fs.readFile(filePath, "utf-8");
         return NextResponse.json(JSON.parse(geojsonData), { status: 200 });
     } catch (error) {
-        console.log(error)
         return NextResponse.json({ error: "GeoJSON file not found" }, { status: 404 });
     }
 }
