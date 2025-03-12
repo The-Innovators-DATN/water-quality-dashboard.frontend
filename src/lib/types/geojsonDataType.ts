@@ -1,16 +1,22 @@
-export interface GeoJsonFeature {
-    type: "Feature";
-    name: string;
-    feature: [
-        type: string,
-        geometry: {
-            type: string;
-            coordinates: number[][] | number[][][] | number[][][][];
-        }
-    ]
-}
-  
 export interface GeoJsonData {
     type: "FeatureCollection";
-    features: GeoJsonFeature[];
+    features: Feature[];
 }
+  
+export interface Feature {
+    type: "Feature";
+    geometry: {
+      type: string;
+      coordinates: number[][][];
+    };
+    properties: FeatureProperties;
+}
+  
+export interface FeatureProperties {
+    name?: string;
+    continent?: string;
+    region?: string;
+    size?: number;
+    country?: string;
+}
+  

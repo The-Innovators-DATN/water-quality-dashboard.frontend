@@ -1,4 +1,4 @@
-import Sidebar from "@/components/Sidebar";
+import FilterSidebar from "@/components/filters/FilterSidebar";
 
 export default function DashboardLayout({
   children,
@@ -6,9 +6,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="h-full flex">
-        <Sidebar />
+    <div className="w-full h-full flex">
         {children}
+        <FilterSidebar />
     </div>
   );
 }
