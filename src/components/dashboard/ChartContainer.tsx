@@ -1,5 +1,4 @@
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { LineChart } from './charts/LineChart';
 import { BarChart } from './charts/BarChart';
 import { PieChart } from './charts/PieChart';
@@ -10,7 +9,6 @@ interface ChartContainerProps {
   showAnomalyMarker?: boolean;
 }
 
-// Dữ liệu mẫu - Trong thực tế bạn sẽ lấy từ API
 const lineChartData = [
   { x: 'Jan', trạm1: 31, trạm2: 41, trạm3: 35 },
   { x: 'Feb', trạm1: 40, trạm2: 24, trạm3: 65 },

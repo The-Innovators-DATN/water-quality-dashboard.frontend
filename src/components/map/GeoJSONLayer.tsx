@@ -1,10 +1,10 @@
 "use client";
 
 import { GeoJSON } from "react-leaflet";
-import L, { Layer } from "leaflet";
+import { Layer } from "leaflet";
 import { GeoJsonData } from "@/lib/types/geojsonDataType";
 
-interface FeatureProperties {
+export interface FeatureProperties {
   name?: string;
   continent?: string;
   region?: string;

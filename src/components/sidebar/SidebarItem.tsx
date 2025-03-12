@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 interface SidebarItemProps {
   id: string;
   title: string;
-  icon: any;
+  icon: React.ElementType | null;
   path: string;
   hasSubmenu?: boolean;
   isExpanded?: boolean;
@@ -21,7 +21,7 @@ interface SidebarItemProps {
 }
 
 const SidebarItem = ({ 
-  id, 
+  // id, 
   title, 
   icon: Icon, 
   path, 

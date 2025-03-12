@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { GeoJsonData } from "@/lib/types/geojsonDataType";
 import LayerSelector from "@/components/ui/LayerSelector";
@@ -18,15 +18,13 @@ interface FeatureProperties {
     coordinates?: string;
 }
 
-export default function Home() {
+function HomeContent() {
     const searchParams = useSearchParams();
     const type = searchParams.get("type") || "map";
 
     const [currentLayer, setCurrentLayer] = useState<string>("");
     const [geojsonData, setGeojsonData] = useState<GeoJsonData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-
-    // Dialog related states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedFeature, setSelectedFeature] = useState<FeatureProperties | null>(null);
     const [stationData, setStationData] = useState<StationData | undefined>(undefined);
@@ -68,32 +66,28 @@ export default function Home() {
         fetchGeoJson(currentLayer);
     }, [currentLayer, fetchGeoJson]);
 
-    // Fetch weather and measurement data when a feature is selected
     useEffect(() => {
         const fetchStationData = async () => {
             if (!selectedFeature) return;
             
-            // Convert feature properties to station data
             const newStationData: StationData = {
                 id: selectedFeature.id || `Station-${Math.floor(Math.random() * 1000)}`,
                 name: selectedFeature.name || "Trạm quan trắc",
                 coordinates: selectedFeature.coordinates || "45.123/25.456",
                 area: selectedFeature.region || "Chưa Âu",
                 country: selectedFeature.country || "Việt Nam",
-                basin: "DANUBE", // Example default
-                wqi: Math.floor(Math.random() * 100) // Random WQI for demonstration
+                basin: "DANUBE",
+                wqi: Math.floor(Math.random() * 100)
             };
             
             setStationData(newStationData);
             
-            // Mock weather data - in production this would be a real API call
             setWeatherData({
                 temperature: `${Math.floor(20 + Math.random() * 15)}°C`,
                 condition: "Trời nhiều mây",
-                elapsedTime: Math.floor(Math.random() * 86400) // Random seconds in a day
+                elapsedTime: Math.floor(Math.random() * 86400)
             });
             
-            // Mock measurement data - in production this would be a real API call
             const mockMeasurements: MeasurementRecord[] = Array(5).fill(null).map((_, index) => ({
                 timestamp: new Date(Date.now() - index * 3600000).toISOString().replace('T', ' ').substring(0, 19),
                 user: "abcxyz",
@@ -120,7 +114,7 @@ export default function Home() {
                 <MapView 
                     geojsonData={geojsonData} 
                     onFeatureClick={handleFeatureClick}
-                    // isLoading={isLoading} 
+                    isLoading={isLoading} 
                 />
             ) : (
                 <ListView />
@@ -134,5 +128,13 @@ export default function Home() {
                 measurementData={measurementData}
             />
         </div>
+    );
+}
+
+export default function Home() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center h-full">Loading...</div>}>
+            <HomeContent />
+        </Suspense>
     );
 }

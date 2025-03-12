@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { ApexOptions } from 'apexcharts';
 import { ClientOnly } from './ClientOnly';
 
-// ApexCharts không hỗ trợ SSR nên cần import động
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface PieDataPoint {
@@ -19,7 +18,6 @@ interface PieChartProps {
 }
 
 export const PieChart: React.FC<PieChartProps> = ({ data, title }) => {
-  // Chuyển đổi dữ liệu cho ApexCharts
   const series = data.map(item => item.value);
   const labels = data.map(item => item.name);
   
@@ -38,8 +36,8 @@ export const PieChart: React.FC<PieChartProps> = ({ data, title }) => {
     },
     legend: {
       position: 'bottom',
-      formatter: function(val: string, opts: any) {
-        return val + " - " + opts.w.globals.series[opts.seriesIndex];
+      formatter: function (val: string, opts: { seriesIndex: number; w: { globals: { series: number[] } } }) {
+        return `${val} - ${opts.w.globals.series[opts.seriesIndex]}`;
       }
     },
     dataLabels: {

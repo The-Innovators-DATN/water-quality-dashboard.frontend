@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogOverlay,
   DialogTitle,
-  DialogDescription
 } from "@/components/ui/dialog";
 import { CloudSun } from "lucide-react";
 

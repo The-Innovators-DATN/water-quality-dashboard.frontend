@@ -5,10 +5,11 @@ import "leaflet/dist/leaflet.css";
 import FitBounds from "@/components/map/FitBounds";
 import GeoJSONLayer from "@/components/map/GeoJSONLayer";
 import { GeoJsonData } from "@/lib/types/geojsonDataType";
+import { FeatureProperties } from "@/components/map/GeoJSONLayer";
 
 interface LeafletMapProps {
     geojsonData: GeoJsonData | null;
-    onFeatureClick: (feature: any) => void;
+    onFeatureClick: (feature: FeatureProperties) => void;
 }
 
 export default function LeafletMap({ geojsonData, onFeatureClick }: LeafletMapProps) {
