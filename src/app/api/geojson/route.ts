@@ -10,6 +10,16 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Layer parameter is required" }, { status: 400 });
     }
 
-    // Serve the file directly from the public folder
-    return NextResponse.redirect(`/geojson/${layer}.json`);
+    try {
+        const host = req.headers.get("host");
+        const protocol = req.headers.get("x-forwarded-proto") || "https";
+        const absoluteUrl = `${protocol}://${host}/geojson/${layer}.json`;
+
+        const geojsonResponse = await fetch(absoluteUrl);
+        const geojsonData = await geojsonResponse.json();
+        return NextResponse.json(geojsonData, { status: 200 });
+    } catch (error) {
+        console.log(error)
+        return NextResponse.json({ error: "GeoJSON file not found" }, { status: 404 });
+    }
 }
