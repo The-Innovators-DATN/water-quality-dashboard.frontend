@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "@/components/sidebar/Sidebar";
 
 export const metadata: Metadata = {
   title: "Quan trắc chất lượng nước",
@@ -13,8 +12,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head></head>
-      <body className="h-screen w-screen flex">
-          <Sidebar />
+      <body>
           {children}
       </body>
     </html>

@@ -3,11 +3,15 @@ import { LucideIcon } from "lucide-react";
 export interface NavItem {
   id: string;
   title: string;
-  icon: LucideIcon | null;
+  icon: LucideIcon;
   path: string;
   hasSubmenu?: boolean;
-  submenu?: NavItem[];
-  isSubmenuItem?: boolean;
+  submenu?: {
+    id: string;
+    title: string;
+    path: string;
+    icon: LucideIcon | null;
+  }[];
 }
 
 export interface ProfileMenuItem {
