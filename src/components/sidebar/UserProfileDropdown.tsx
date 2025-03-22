@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { User } from "lucide-react";
-import { ProfileMenuSection } from "@/lib/types/sidebar";
+import { ProfileMenuSection, ProfileMenuItem } from "@/lib/types/sidebar";
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/stores/useAuthStore";
 
 interface UserProfileDropdownProps {
   profileMenuSections: ProfileMenuSection[];
@@ -16,13 +18,14 @@ export default function UserProfileDropdown({
   userRole 
 }: UserProfileDropdownProps) {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [loadingItem, setLoadingItem] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
   
-  // Xử lý click bên ngoài để đóng dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -33,17 +36,44 @@ export default function UserProfileDropdown({
         setIsMenuOpen(false);
       }
     }
-    
-    // Thêm event listener khi dropdown đang mở
+
     if (isMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     
-    // Cleanup function
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isMenuOpen]);
+
+  // Xử lý click menu item
+  const handleMenuItemClick = async (item: ProfileMenuItem, event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    // Nếu là logout, xử lý đặc biệt
+    if (item.id === 'logout') {
+      setLoadingItem('logout');
+      
+      try {
+        // Sử dụng hàm logout trực tiếp thay vì từ store
+        logout();
+        
+        // Thêm chút delay để trải nghiệm tốt hơn
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Đóng menu và chuyển hướng
+        setIsMenuOpen(false);
+        router.push('/login');
+      } catch (error) {
+        console.error('Lỗi khi đăng xuất:', error);
+      } finally {
+        setLoadingItem(null);
+      }
+    } else {
+      setIsMenuOpen(false);
+      router.push(item.path);
+    }
+  };
 
   return (
     <div className="mt-auto pt-4 border-t border-blue-700 relative" ref={menuRef}>
@@ -61,8 +91,7 @@ export default function UserProfileDropdown({
           </div>
         </div>
       </div>
-      
-      {/* Profile Dropdown Menu - shadcn/ui style */}
+
       {isMenuOpen && (
         <div className="absolute bottom-full left-0 mb-2 w-56 bg-white text-gray-800 rounded-md shadow-lg overflow-hidden z-50 border border-gray-200">
           {profileMenuSections.map((section, index) => (
@@ -79,10 +108,15 @@ export default function UserProfileDropdown({
                     key={item.id} 
                     href={item.path} 
                     className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={(e) => handleMenuItemClick(item, e)}
                   >
                     <div className="flex items-center gap-2">
-                      <item.icon size={16} className="text-gray-500" />
-                      <span>{item.title}</span>
+                      {loadingItem === item.id ? (
+                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <item.icon size={16} className="text-gray-500" />
+                      )}
+                      <span>{loadingItem === item.id && item.id === 'logout' ? 'Đang đăng xuất...' : item.title}</span>
                     </div>
                     {item.shortcut && <span className="text-xs text-gray-500">{item.shortcut}</span>}
                   </a>
