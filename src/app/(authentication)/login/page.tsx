@@ -205,7 +205,7 @@ export default function LoginPage() {
                   </label>
                 </div>
                 <div className="text-sm">
-                  <a href="#" className="text-blue-600 hover:text-blue-800">
+                  <a href="/forgot-password" className="text-blue-600 hover:text-blue-800">
                     Quên mật khẩu?
                   </a>
                 </div>

@@ -104,7 +104,7 @@ export const mockAuthService = {
         expiresAt: Date.now() + TOKEN_EXPIRY
       });
 
-      console.log(`[MOCK] Reset password link: /reset-password?token=${token}`);
+      console.log(`[MOCK] Reset password link: /reset-password/${token}`);
       
       return {
         success: true,
