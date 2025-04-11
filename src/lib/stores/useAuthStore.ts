@@ -4,7 +4,8 @@ import { persist } from 'zustand/middleware';
 // Định nghĩa kiểu dữ liệu cho User
 export interface User {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
 }

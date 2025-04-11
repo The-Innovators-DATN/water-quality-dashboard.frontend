@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+// import { useSearchParams } from "next/navigation";
+import { Map, List } from "lucide-react";
+// import ListView from "@/components/list/ListView"; 
+import dynamic from "next/dynamic";
 import { GeoJsonData } from "@/lib/types/geojsonDataType";
-import LayerSelector from "@/components/ui/LayerSelector";
-import ListView from "@/components/list/ListView"; 
-import MapView from "@/components/map/MapView";
+
 import WaterQualityDialog, { StationData, WeatherData, MeasurementRecord } from "@/components/map/WaterQualityDialog";
 
 interface FeatureProperties {
@@ -18,9 +19,14 @@ interface FeatureProperties {
     coordinates?: string;
 }
 
-function HomeContent() {
-    const searchParams = useSearchParams();
-    const type = searchParams.get("type") || "map";
+const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), { 
+    ssr: false,
+    loading: () => <p>Loading...</p>
+});
+
+export default function Home() {
+    // const searchParams = useSearchParams();
+    // const type = searchParams.get("type") || "map";
 
     const [currentLayer, setCurrentLayer] = useState<string>("");
     const [geojsonData, setGeojsonData] = useState<GeoJsonData | null>(null);
@@ -47,7 +53,7 @@ function HomeContent() {
         }
     
         try {
-            const response = await fetch(`/api/geojson?layer=${layer}`);
+            const response = await fetch(`/geojson/${layer}.json`);
             if (!response.ok) throw new Error("Failed to fetch GeoJSON");
     
             const data = await response.json();
@@ -109,17 +115,58 @@ function HomeContent() {
 
     return (
         <div className="relative w-full h-full flex flex-col">
-            <LayerSelector currentLayer={currentLayer} onLayerChange={setCurrentLayer} />
-            {type === "map" ? (
-                <MapView 
-                    geojsonData={geojsonData} 
-                    onFeatureClick={handleFeatureClick}
-                    isLoading={isLoading} 
-                />
-            ) : (
-                <ListView />
+            <div className="w-full flex justify-between px-4">
+                <div className="flex py-2">
+                    <div 
+                        className={
+                            `w-[140px] p-2 space-x-2 flex justify-center items-center border rounded-l-lg bg-blue-500 text-white
+                            `
+                        }
+                    >
+                        <Map size={20} />
+                        <p>Bản đồ</p>
+                    </div>
+                    <div className="w-[140px] p-2 space-x-2 flex justify-center border rounded-r-lg">
+                        <List size={20} />
+                        <p>Danh sách</p>
+                    </div>
+                </div>
+                <div className="flex py-2">
+                    <button 
+                        className={
+                            `w-[100px] p-2 border rounded-l-lg 
+                            ${currentLayer == ""? "bg-blue-500 text-white": ""}
+                            `
+                        }
+                        onClick={() => setCurrentLayer("")}
+                    >
+                        Trạm
+                    </button>
+                    <button 
+                        className={
+                            `w-[100px] p-2 border 
+                            ${currentLayer == "catchments"? "bg-blue-500 text-white": ""}
+                            `
+                        }
+                        onClick={() => setCurrentLayer("catchments")}
+                    >
+                        Lưu vực
+                    </button>
+                    <button 
+                        className={
+                            `w-[100px] p-2 border rounded-r-lg 
+                            ${currentLayer == "countries"? "bg-blue-500 text-white": ""}
+                            `
+                        }
+                        onClick={() => setCurrentLayer("countries")}
+                    >
+                        Quốc gia
+                    </button>
+                </div>
+            </div>
+            {!isLoading && (
+                <LeafletMap geojsonData={geojsonData} onFeatureClick={handleFeatureClick} />
             )}
-            
             <WaterQualityDialog 
                 isOpen={dialogOpen} 
                 onOpenChange={setDialogOpen}
@@ -128,13 +175,5 @@ function HomeContent() {
                 measurementData={measurementData}
             />
         </div>
-    );
-}
-
-export default function Home() {
-    return (
-        <Suspense fallback={<div className="flex justify-center items-center h-full">Loading...</div>}>
-            <HomeContent />
-        </Suspense>
     );
 }
