@@ -11,6 +11,7 @@ import {
 import WQIGauge from '@/components/WQIGauge';
 import AlertHistoryTable from "@/components/AlertHistoryTable";
 import LineChart from "@/components/charts/LineChart";
+import RefreshSelector from "@/components/RefreshSelector";
 
 export interface StationData {
   id?: string;
@@ -78,6 +79,7 @@ const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);
   const [refreshInterval, setRefreshInterval] = useState(99);
   const [timeRange, setTimeRange] = useState("24h");
+  const [triggerFetch, setTriggerFetch] = useState(false);
 
 
   const handleAction = (action: ActionType) => {
@@ -181,7 +183,7 @@ const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({
                 </div>
               </TabPanel>
 
-              <TabPanel className="h-full px-6 py-4 overflow-auto">
+              <TabPanel className="h-full overflow-auto">
                 <div className="flex-1 h-full flex flex-col min-w-0">
                   <div className="flex items-center justify-between border-b px-6 py-2 text-sm">
                     {activeAction === "chart" && (
@@ -206,19 +208,10 @@ const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({
                           <option value="24h">24 giờ trước</option>
                         </select>
 
-                        <input
-                          className="border rounded px-2 py-1 h-8 w-[80px] text-sm"
-                          type="number"
-                          value={refreshInterval}
-                          onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                        <RefreshSelector
+                          onRefresh={() => setTriggerFetch((prev) => !prev)}
+                          onIntervalChange={(val) => setRefreshInterval(val)}
                         />
-                        <span className="text-sm">giây</span>
-
-                        <button className="px-3 py-1 bg-red-600 text-white text-sm rounded"
-                          onClick={() => setRefreshInterval(0)}
-                        >
-                          TẮT
-                        </button>
                       </div>
                     )}
 
@@ -310,16 +303,17 @@ const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({
                     )}
 
                     {viewStep === "chart" && (
-                      <div className="border rounded p-4 bg-white">
-                        <LineChart
-                          targets={selectedParams.map(param => ({
-                            target_type: "parameter",
-                            display_name: param,
-                            color: chartColorMap[param] || "#0ea5e9",
-                            api: `/api/data/${encodeURIComponent(param)}`
-                          }))}
-                        />
-                      </div>
+                      <LineChart
+                        targets={selectedParams.map(param => ({
+                          target_type: "parameter",
+                          display_name: param,
+                          color: chartColorMap[param] || "#0ea5e9",
+                          api: `/api/data/${encodeURIComponent(param)}`
+                        }))}
+                        refreshInterval={refreshInterval}
+                        timeRange={timeRange}
+                        triggerFetch={triggerFetch}
+                      />
                     )}
                   </div>
                 </div>
