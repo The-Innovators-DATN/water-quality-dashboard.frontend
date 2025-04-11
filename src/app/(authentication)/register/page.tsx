@@ -11,14 +11,16 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
     agreeToTerms: false,
   });
   const [errors, setErrors] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -50,8 +52,13 @@ export default function RegisterPage() {
     let valid = true;
     const newErrors = { ...errors };
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Họ và tên là bắt buộc";
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "Tên là bắt buộc";
+      valid = false;
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Họ là bắt buộc";
       valid = false;
     }
 
@@ -94,7 +101,8 @@ export default function RegisterPage() {
 
     setLoading(true);
     setErrors({
-      fullName: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -108,7 +116,8 @@ export default function RegisterPage() {
       
       // Gọi service đăng ký
       await mockAuthService.register(
-        formData.fullName,
+        formData.firstName,
+        formData.lastName,
         formData.email,
         formData.password
       );
@@ -164,27 +173,53 @@ export default function RegisterPage() {
             <div className="space-y-5">
               <div>
                 <label
-                  htmlFor="fullName"
+                  htmlFor="firstName"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Họ và tên
+                  Tên
                 </label>
                 <input
-                  id="fullName"
-                  name="fullName"
+                  id="firstName"
+                  name="firstName"
                   type="text"
-                  value={formData.fullName}
+                  value={formData.firstName}
                   onChange={handleChange}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
-                    errors.fullName
+                    errors.firstName
                       ? "border-red-300 focus:ring-red-200"
                       : "border-gray-300 focus:ring-blue-200"
                   }`}
                   placeholder="Nguyễn Văn A"
                   disabled={loading}
                 />
-                {errors.fullName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="lastName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Họ
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
+                    errors.lastName
+                      ? "border-red-300 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-blue-200"
+                  }`}
+                  placeholder="Nguyễn Văn A"
+                  disabled={loading}
+                />
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
                 )}
               </div>
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import FitBounds from "@/components/map/FitBounds";

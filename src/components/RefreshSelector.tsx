@@ -14,7 +14,12 @@ const intervals = [
   { label: "1h", value: 3600 },
 ];
 
-export default function RefreshControl({ onRefresh, onIntervalChange }) {
+interface RefreshControlProps {
+  onRefresh: () => void;
+  onIntervalChange: (val: number) => void;
+}
+
+export default function RefreshControl({ onRefresh, onIntervalChange }: RefreshControlProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selected, setSelected] = useState(intervals[1]); // Default: 5s
 

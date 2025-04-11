@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { Dialog, DialogPanel, DialogBackdrop } from "@headlessui/react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import {
-  X, Monitor, ClipboardList, Calendar, Share, Table, BarChart, ChevronDown,
+  X, Monitor, ClipboardList, Calendar, Share, Table, BarChart,
 } from "lucide-react";
 
 import WQIGauge from '@/components/WQIGauge';
@@ -48,14 +48,6 @@ export interface WaterQualityDialogProps {
 type ViewStep = "select" | "stats" | "chart";
 
 type ActionType = "chart" | "export" | "schedule" | "stats";
-
-const parameterGroups = [
-  "Thông số pH",
-  "Nhóm thông số thuốc bảo vệ thực vật",
-  "Nhóm thông số kim loại nặng",
-  "Nhóm thông số hữu cơ và dinh dưỡng",
-  "Nhóm thông số vi sinh",
-];
 
 const availableParameters = ["pH", "Nhiệt độ nước", "TSS", "NH4", "NO3", "Coliform"];
 
@@ -210,7 +202,7 @@ const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({
 
                         <RefreshSelector
                           onRefresh={() => setTriggerFetch((prev) => !prev)}
-                          onIntervalChange={(val) => setRefreshInterval(val)}
+                          onIntervalChange={(val: number) => setRefreshInterval(val)}
                         />
                       </div>
                     )}

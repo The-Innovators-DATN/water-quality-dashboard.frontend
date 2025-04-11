@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+// import { useSearchParams } from "next/navigation";
 import { Map, List } from "lucide-react";
-import ListView from "@/components/list/ListView"; 
+// import ListView from "@/components/list/ListView"; 
 import dynamic from "next/dynamic";
 import { GeoJsonData } from "@/lib/types/geojsonDataType";
 
@@ -25,8 +25,8 @@ const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
 });
 
 export default function Home() {
-    const searchParams = useSearchParams();
-    const type = searchParams.get("type") || "map";
+    // const searchParams = useSearchParams();
+    // const type = searchParams.get("type") || "map";
 
     const [currentLayer, setCurrentLayer] = useState<string>("");
     const [geojsonData, setGeojsonData] = useState<GeoJsonData | null>(null);
@@ -53,7 +53,7 @@ export default function Home() {
         }
     
         try {
-            const response = await fetch(`/api/geojson?layer=${layer}`);
+            const response = await fetch(`/geojson/${layer}.json`);
             if (!response.ok) throw new Error("Failed to fetch GeoJSON");
     
             const data = await response.json();
@@ -164,7 +164,9 @@ export default function Home() {
                     </button>
                 </div>
             </div>
-            <LeafletMap geojsonData={geojsonData} onFeatureClick={handleFeatureClick} />
+            {!isLoading && (
+                <LeafletMap geojsonData={geojsonData} onFeatureClick={handleFeatureClick} />
+            )}
             <WaterQualityDialog 
                 isOpen={dialogOpen} 
                 onOpenChange={setDialogOpen}

@@ -1,7 +1,7 @@
 "use client";
 
 import * as d3 from "d3";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 type Target = {
   target_type: string;
@@ -16,6 +16,27 @@ interface LineChartProps {
   timeRange?: string;
   triggerFetch?: boolean;
 }
+
+type ChartPoint = {
+  timestamp: Date;
+  value: number;
+  anomaly: boolean;
+  forecast: boolean;
+  label: string;
+  color: string;
+};
+
+type ApiPoint = {
+  timestamp: string;
+  value: number;
+  anomaly: boolean;
+};
+
+type ApiResponse = {
+  parameter: string;
+  data: ApiPoint[];
+  forecast: ApiPoint[];
+} | null;
 
 export default function LineChart({
   targets,
@@ -54,24 +75,9 @@ export default function LineChart({
 
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, []); 
 
-  const fetchAndDraw = async () => {
-    const t = targetsRef.current;
-    const range = timeRangeRef.current;
-
-    const responses = await Promise.all(
-      t.map((target) =>
-        fetch(`${target.api}?range=${range}`)
-          .then((res) => res.json())
-          .catch(() => null)
-      )
-    );
-
-    drawChart(responses);
-  };
-
-  const drawChart = (responses: any[]) => {
+  const drawChart = useCallback((responses: ApiResponse[]) => {
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
 
@@ -89,12 +95,12 @@ export default function LineChart({
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const datasets = responses.map((res, i) => {
+    const datasets: ChartPoint[][] = responses.map((res, i) => {
       const color = targetsRef.current[i].color;
       const label = targetsRef.current[i].display_name;
-
-      let actual =
-        res?.data?.map((d: any) => ({
+    
+      const actual: ChartPoint[] =
+        res?.data?.map((d: ApiPoint) => ({
           timestamp: new Date(d.timestamp),
           value: d.value,
           anomaly: d.anomaly,
@@ -102,9 +108,9 @@ export default function LineChart({
           label,
           color,
         })) ?? [];
-
-      let forecast =
-        res?.forecast?.map((d: any) => ({
+    
+      const forecast: ChartPoint[] =
+        res?.forecast?.map((d: ApiPoint) => ({
           timestamp: new Date(d.timestamp),
           value: d.value,
           anomaly: d.anomaly,
@@ -112,18 +118,18 @@ export default function LineChart({
           label,
           color,
         })) ?? [];
-
+    
       if (forecast.length > 0) {
-        const bridgePoint = { ...forecast[0], forecast: false };
+        const bridgePoint: ChartPoint = { ...forecast[0], forecast: false };
         actual.push(bridgePoint);
       }
-
+    
       return [...actual, ...forecast].sort(
         (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
       );
     });
 
-    const flatData = datasets.flat();
+    const flatData: ChartPoint[] = datasets.flat();
     if (flatData.length === 0) return;
 
     const x = d3
@@ -154,11 +160,13 @@ export default function LineChart({
       .attr("transform", `translate(0,${height})`)
       .call(d3.axisBottom(x));
 
-    let tooltipDiv = d3.select(containerRef.current).select(".tooltip-html");
+      let tooltipDiv = containerRef.current
+      ? d3.select(containerRef.current).select<HTMLDivElement>(".tooltip-html")
+      : d3.select(document.createElement("div"))
     if (tooltipDiv.empty()) {
       tooltipDiv = d3
-        .select(containerRef.current)
-        .append("div")
+        .select(containerRef.current as HTMLDivElement)
+        .append<HTMLDivElement>("div")
         .attr("class", "tooltip-html")
         .style("position", "absolute")
         .style("z-index", "999")
@@ -195,6 +203,11 @@ export default function LineChart({
           minDist = dist;
         }
       }
+
+      if (!closest) {
+        tooltipDiv.style("display", "none");
+        return;
+      }
     
       const xMouse = mx - margin.left;
       const xClosest = x(closest.timestamp);
@@ -207,6 +220,7 @@ export default function LineChart({
       }
     
       const containerRect = containerRef.current?.getBoundingClientRect();
+      if (!containerRect) return;
       const svgX = event.clientX - containerRect.left;
       const svgY = event.clientY - containerRect.top;
     
@@ -240,8 +254,7 @@ export default function LineChart({
       const actual = data.filter((d) => !d.forecast);
       const forecast = data.filter((d) => d.forecast);
 
-      const line = d3
-        .line<any>()
+      const line = d3.line<ChartPoint>()
         .x((d) => x(d.timestamp))
         .y((d) => y(d.value));
 
@@ -311,22 +324,35 @@ export default function LineChart({
         .text(target.display_name)
         .attr("font-size", "12px");
     });
-  };
+  }, [size]);
+
+  const fetchAndDraw = useCallback(async () => {
+    const t = targetsRef.current;
+    const range = timeRangeRef.current;
+  
+    const responses: ApiResponse[] = await Promise.all(
+      t.map((target) =>
+        fetch(`${target.api}?range=${range}`)
+          .then((res) => res.json())
+          .catch(() => null)
+      )
+    );
+  
+    drawChart(responses);
+  }, [drawChart]); 
 
   useEffect(() => {
     fetchAndDraw();
     const intervalId =
-      refreshInterval > 0
-        ? setInterval(fetchAndDraw, refreshInterval * 1000)
-        : null;
+      refreshInterval > 0 ? setInterval(fetchAndDraw, refreshInterval * 1000) : null;
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [refreshInterval]);
-
+  }, [refreshInterval, fetchAndDraw]);
+  
   useEffect(() => {
     fetchAndDraw();
-  }, [timeRange, size, triggerFetch]);
+  }, [timeRange, size, triggerFetch, fetchAndDraw]);  
 
   return (
     <div
