@@ -86,7 +86,7 @@ export default function UserProfileDropdown({
             <User size={24} />
           </div>
           <div>
-            <p className="font-medium">{userName}</p>
+            <p className="font-medium text-clip">{userName}</p>
             <p className="text-xs text-blue-300">{userRole}</p>
           </div>
         </div>

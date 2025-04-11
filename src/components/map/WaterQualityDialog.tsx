@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader,
-  DialogOverlay,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { CloudSun } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { Dialog, DialogPanel, DialogBackdrop } from "@headlessui/react";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import {
+  X, Monitor, ClipboardList, Calendar, Share, Table, BarChart, ChevronDown,
+} from "lucide-react";
 
-// TypeScript interfaces
+import WQIGauge from '@/components/WQIGauge';
+import AlertHistoryTable from "@/components/AlertHistoryTable";
+import LineChart from "@/components/charts/LineChart";
+
 export interface StationData {
   id?: string;
   name?: string;
@@ -43,251 +44,290 @@ export interface WaterQualityDialogProps {
   measurementData?: MeasurementRecord[];
 }
 
-const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({ 
-  isOpen, 
-  onOpenChange, 
-  stationData, 
-  weatherData,
-  measurementData 
+type ViewStep = "select" | "stats" | "chart";
+
+type ActionType = "chart" | "export" | "schedule" | "stats";
+
+const parameterGroups = [
+  "Thông số pH",
+  "Nhóm thông số thuốc bảo vệ thực vật",
+  "Nhóm thông số kim loại nặng",
+  "Nhóm thông số hữu cơ và dinh dưỡng",
+  "Nhóm thông số vi sinh",
+];
+
+const availableParameters = ["pH", "Nhiệt độ nước", "TSS", "NH4", "NO3", "Coliform"];
+
+const chartColorMap: Record<string, string> = {
+  "pH": "#f59e0b",
+  "Nhiệt độ nước": "#10b981",
+  "TSS": "#3b82f6",
+  "NH4": "#ef4444",
+  "NO3": "#8b5cf6",
+  "Coliform": "#ec4899"
+};
+
+const WaterQualityDialog: React.FC<WaterQualityDialogProps> = ({
+  isOpen,
+  onOpenChange,
+  stationData
 }) => {
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [time, setTime] = useState(format(new Date(), "HH:mm:ss"));
+  const [viewStep, setViewStep] = useState<ViewStep>("select");
+  const [selectedParams, setSelectedParams] = useState<string[]>([]);
+  const [activeAction, setActiveAction] = useState<ActionType | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState(99);
+  const [timeRange, setTimeRange] = useState("24h");
+
+
+  const handleAction = (action: ActionType) => {
+    if (selectedParams.length === 0) {
+      alert("Vui lòng chọn ít nhất một thông số.");
+      return;
+    }
   
-  // Format time as 00:00:00
-  const formatTime = (seconds: number = 0): string => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    setActiveAction(action);
+  
+    switch (action) {
+      case "chart":
+        setViewStep("chart");
+        break;
+      case "stats":
+        setViewStep("stats"); // Bạn có thể thêm view thống kê nếu có
+        break;
+      case "export":
+        console.log("Exporting report for:", selectedParams);
+        break;
+      case "schedule":
+        console.log("Scheduling report for:", selectedParams);
+        break;
+    }
+  };
+  
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(format(new Date(), "H:mm:ss"));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggleParam = (param: string) => {
+    setSelectedParams(prev =>
+      prev.includes(param)
+        ? prev.filter(p => p !== param)
+        : [...prev, param]
+    );
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50 z-[9998]" />
-      <DialogContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-w-[90%] w-[90%] max-h-[90%] h-[90%] bg-white shadow-lg rounded-lg p-0 overflow-auto">
-        <button 
-          onClick={() => onOpenChange(false)} 
-          className="absolute top-3 right-3 z-10 rounded-full p-1 hover:bg-gray-100"
-          aria-label="Đóng"
-        >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12.8536 2.85355C13.0488 2.65829 13.0488 2.34171 12.8536 2.14645C12.6583 1.95118 12.3417 1.95118 12.1464 2.14645L7.5 6.79289L2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L6.79289 7.5L2.14645 12.1464C1.95118 12.3417 1.95118 12.6583 2.14645 12.8536C2.34171 13.0488 2.65829 13.0488 2.85355 12.8536L7.5 8.20711L12.1464 12.8536C12.3417 13.0488 12.6583 13.0488 12.8536 12.8536C13.0488 12.6583 13.0488 12.3417 12.8536 12.1464L8.20711 7.5L12.8536 2.85355Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
-          </svg>
-        </button>
-        <DialogHeader className="px-4 pt-4 pb-2 hidden">
-          <DialogTitle>Chi tiết trạm quan trắc chất lượng nước</DialogTitle>
-        </DialogHeader>
-        
-        {/* Custom Tabs Header */}
-        <div className="w-full sticky top-0 bg-white z-10 border-b">
-          <div className="grid grid-cols-2">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`py-4 text-center transition-colors ${
-                activeTab === "dashboard" 
-                  ? "bg-white border-b-2 border-blue-500 font-medium" 
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              Bảng điều khiển
-            </button>
-            <button
-              onClick={() => setActiveTab("parameters")}
-              className={`py-4 text-center transition-colors ${
-                activeTab === "parameters" 
-                  ? "bg-white border-b-2 border-blue-500 font-medium" 
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              Các thông số
-            </button>
-          </div>
-        </div>
+    <Dialog open={isOpen} onClose={() => onOpenChange(false)} className="relative z-50">
+      <DialogBackdrop className="fixed inset-0 bg-black/30" />
+      <div className="fixed inset-0 flex flex-col w-screen h-screen items-center justify-center">
+        <DialogPanel className="w-[90%] h-[90%] bg-white p-6 rounded-xl flex flex-col relative">
+          <button
+            className="absolute top-4 right-4 z-10"
+            onClick={() => onOpenChange(false)}
+          >
+            <X size={24} className="text-gray-500 hover:text-gray-700" />
+          </button>
 
-        {/* Dashboard Tab Content */}
-        {activeTab === "dashboard" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-            {/* Station Info - Dark Blue Header */}
-            <div className="col-span-2 bg-blue-800 text-white p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-xl font-bold">{stationData?.name ?? "ALBA IULIA AMONTE"}</h3>
-                  <p className="text-sm mt-2">ID trạm: {stationData?.id ?? "RO/000/03"}</p>
-                  <p className="text-sm mt-2">Kinh vĩ: {stationData?.coordinates ?? "46.074/23"}</p>
-                  <p className="text-sm mt-2">Lưu vực: {stationData?.basin ?? "DANUBE"}</p>
-                </div>
-                <div>
-                  <p className="text-sm">Khu vực: {stationData?.area ?? "Chưa Âu"}</p>
-                  <p className="text-sm mt-2">Quốc gia: {stationData?.country ?? "Romania"}</p>
-                </div>
-              </div>
-            </div>
+          <TabGroup className="w-full h-full flex flex-col">
+            <TabList className="flex shrink-0 space-x-4">
+              <Tab className="px-2 py-1 flex flex-col items-center text-xs space-y-1 data-[selected]:text-blue-500 data-[selected]:border-b-2 data-[selected]:border-blue-500">
+                <Monitor size={18} />
+                <span>Bảng điều khiển</span>
+              </Tab>
+              <Tab className="px-2 py-1 flex flex-col items-center text-xs space-y-1 data-[selected]:text-blue-500 data-[selected]:border-b-2 data-[selected]:border-blue-500">
+                <ClipboardList size={18} />
+                <span>Các thông số</span>
+              </Tab>
+            </TabList>
 
-            {/* Weather Card */}
-            <div className="bg-white border text-center flex flex-col items-center justify-center p-4">
-              <div className="flex items-center justify-center">
-                <CloudSun size={48} className="text-gray-500" />
-                <div className="ml-2">
-                  <h2 className="text-4xl font-bold">{weatherData?.temperature ?? "27°C"}</h2>
-                  <p className="text-sm">
-                    {weatherData?.condition ?? "Trời nhiều mây"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Timer Card */}
-            <div className="border p-4 mt-2">
-              <p className="text-center text-sm mb-2">Giờ hiện tại</p>
-              <h2 className="text-5xl font-bold text-center text-gray-800">
-                {formatTime(weatherData?.elapsedTime ?? 2358)}
-              </h2>
-            </div>
-
-            {/* WQI Gauge Card */}
-            <div className="border p-4 mt-2">
-              <p className="text-center text-sm mb-2">Chỉ số WQI</p>
-              <div className="flex justify-center">
-                <div className="w-40 h-40 relative">
-                  <div className="w-full h-full rounded-full border-8 border-gray-200 flex items-center justify-center">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold">{stationData?.wqi ?? "75"}</span>
+            <TabPanels className="h-full mt-2 border rounded-lg overflow-hidden">
+              {/* Dashboard */}
+              <TabPanel className="grid grid-rows-4 h-full">
+                <div className="row-span-1 bg-blue-500 text-white p-2 rounded-t-lg space-y-2">
+                  <p className="font-bold">{stationData?.name}</p>
+                  <div className="w-1/2 h-1 bg-white"></div>
+                  <div className="w-1/2 flex justify-between space-x-2">
+                    <div className="w-1/2 truncate">
+                      <p>ID trạm: {stationData?.id}</p>
+                      <p>Toạ độ: {stationData?.coordinates}</p>
+                    </div>
+                    <div className="w-1/2 truncate">
+                      <p>Khu vực: {stationData?.area}</p>
+                      <p>Quốc gia: {stationData?.country}</p>
+                      <p>Hệ thống lưu vực: {stationData?.basin}</p>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Data Table */}
-            <div className="col-span-2 border p-4 mt-2">
-              <div className="overflow-x-auto">
-                <p className="text-sm mb-2">Lịch sử cảnh báo</p>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạm</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nội dung thông báo</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mức độ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {(measurementData ?? Array(5).fill({})).map((record, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 text-sm">{record?.timestamp ?? "2024-12-13 23:49:00"}</td>
-                        <td className="px-4 py-2 text-sm">{record?.user ?? "abcxyz"}</td>
-                        <td className="px-4 py-2 text-sm">{record?.station ?? "Alba Iulia Amonte"}</td>
-                        <td className="px-4 py-2 text-sm">{record?.message ?? "Chỉ số pH tại trạm Alba Iulia Amonte đã vượt mức 10"}</td>
-                        <td className="px-4 py-2 text-sm">
-                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                            {record?.level ?? "Cao"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-sm text-gray-500">1 - 5 trên 10</span>
-                  <div className="flex space-x-2">
-                    <button className="p-1 border rounded">
-                      <span className="sr-only">First</span>
-                      ⟪
-                    </button>
-                    <button className="p-1 border rounded">
-                      <span className="sr-only">Previous</span>
-                      ⟨
-                    </button>
-                    <button className="p-1 border rounded">
-                      <span className="sr-only">Next</span>
-                      ⟩
-                    </button>
-                    <button className="p-1 border rounded">
-                      <span className="sr-only">Last</span>
-                      ⟫
-                    </button>
+                <div className="row-span-3 flex gap-4 p-4 h-full">
+                  <div className="w-1/4 flex flex-col gap-4">
+                    <div className="bg-gray-200 rounded-lg p-4 flex flex-col justify-center items-center flex-1">
+                      <p className="text-lg">Giờ hiện tại</p>
+                      <p className="text-6xl">{time}</p>
+                    </div>
+                    <div className="bg-gray-200 rounded-lg p-4 flex flex-col justify-center items-center flex-1">
+                      <p className="text-lg">Chỉ số WQI</p>
+                      <WQIGauge value={stationData?.wqi || 120} />
+                    </div>
+                  </div>
+
+                  <div className="w-3/4 h-full overflow-auto">
+                    <AlertHistoryTable />
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
+              </TabPanel>
 
-        {/* Parameters Tab Content */}
-        {activeTab === "parameters" && (
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Thông số vật lý</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span>Nhiệt độ</span>
-                    <span className="font-medium">24.5°C</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Độ đục</span>
-                    <span className="font-medium">5.2 NTU</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Độ dẫn điện</span>
-                    <span className="font-medium">320 μS/cm</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="border p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Thông số hóa học</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span>pH</span>
-                    <span className="font-medium">7.8</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Oxy hòa tan (DO)</span>
-                    <span className="font-medium">6.5 mg/L</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Nitrate</span>
-                    <span className="font-medium">2.1 mg/L</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="border p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Kim loại nặng</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span>Chì (Pb)</span>
-                    <span className="font-medium">0.002 mg/L</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Thủy ngân (Hg)</span>
-                    <span className="font-medium">&lt; 0.001 mg/L</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Asen (As)</span>
-                    <span className="font-medium">0.003 mg/L</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="border p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Vi sinh vật</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span>E. coli</span>
-                    <span className="font-medium">120 CFU/100mL</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span>Coliform tổng</span>
-                    <span className="font-medium">350 CFU/100mL</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-      </DialogContent>
+              <TabPanel className="h-full px-6 py-4 overflow-auto">
+                <div className="flex-1 h-full flex flex-col min-w-0">
+                  <div className="flex items-center justify-between border-b px-6 py-2 text-sm">
+                    {activeAction === "chart" && (
+                      <div className="flex items-center gap-3">
+                        <button
+                          className="text-sm text-blue-600 hover:underline ml-4"
+                          onClick={() => {
+                            setViewStep("select");
+                            setActiveAction(null);
+                          }}
+                        >
+                          ← Quay lại
+                        </button>
+                        <select
+                          className="border rounded px-2 py-1 h-8 text-sm"
+                          value={timeRange}
+                          onChange={(e) => setTimeRange(e.target.value)}
+                        >
+                          <option value="1h">1 giờ trước</option>
+                          <option value="6h">6 giờ trước</option>
+                          <option value="12h">12 giờ trước</option>
+                          <option value="24h">24 giờ trước</option>
+                        </select>
+
+                        <input
+                          className="border rounded px-2 py-1 h-8 w-[80px] text-sm"
+                          type="number"
+                          value={refreshInterval}
+                          onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                        />
+                        <span className="text-sm">giây</span>
+
+                        <button className="px-3 py-1 bg-red-600 text-white text-sm rounded"
+                          onClick={() => setRefreshInterval(0)}
+                        >
+                          TẮT
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <button
+                          className="flex items-center gap-1 text-sm"
+                          onClick={() => handleAction("schedule")}
+                        >
+                          <Calendar size={16} />
+                          <span>Lập lịch báo cáo</span>
+                        </button>
+                        <button
+                          className="flex items-center gap-1 text-sm"
+                          onClick={() => handleAction("export")}
+                        >
+                          <Share size={16} />
+                          <span>Xuất báo cáo</span>
+                        </button>
+                      </div>
+
+                      <div className="w-px h-5 bg-gray-300" />
+
+                      <div className="flex items-center gap-4">
+                        <button
+                          className={`flex items-center gap-1 text-sm ${
+                            activeAction === "stats"
+                              ? "text-blue-500 border-b-2 border-blue-500"
+                              : "hover:text-blue-500"
+                          }`}
+                          onClick={() => handleAction("stats")}
+                        >
+                          <Table size={16} />
+                          <span>Thống kê</span>
+                        </button>
+                        <button
+                          className={`flex items-center gap-1 text-sm ${
+                            activeAction === "chart"
+                              ? "text-blue-500 border-b-2 border-blue-500"
+                              : "hover:text-blue-500"
+                          }`}
+                          onClick={() => handleAction("chart")}
+                        >
+                          <BarChart size={16} />
+                          <span>Biểu đồ</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-auto px-6 py-4">
+                    {viewStep === "select" && (
+                      <div className="space-y-4">
+                        <p className="font-medium text-lg">Chọn thông số để xem biểu đồ:</p>
+
+                        <div className="overflow-auto border rounded">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-gray-100 text-left">
+                              <tr>
+                                <th className="px-4 py-2"><input type="checkbox" /></th>
+                                <th className="px-4 py-2">Nhóm thông số</th>
+                                <th className="px-4 py-2">Thông số</th>
+                                <th className="px-4 py-2">Viết tắt</th>
+                                <th className="px-4 py-2">Đơn vị</th>
+                                <th className="px-4 py-2">Số lượng giá trị</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {availableParameters.map((param, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50 border-t">
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParams.includes(param)}
+                                      onChange={() => toggleParam(param)}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">Nhóm thông số mẫu</td>
+                                  <td className="px-4 py-2">{param}</td>
+                                  <td className="px-4 py-2">{param}</td>
+                                  <td className="px-4 py-2">µg/l</td>
+                                  <td className="px-4 py-2">999999</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {viewStep === "chart" && (
+                      <div className="border rounded p-4 bg-white">
+                        <LineChart
+                          targets={selectedParams.map(param => ({
+                            target_type: "parameter",
+                            display_name: param,
+                            color: chartColorMap[param] || "#0ea5e9",
+                            api: `/api/data/${encodeURIComponent(param)}`
+                          }))}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabPanel>
+            </TabPanels>
+          </TabGroup>
+        </DialogPanel>
+      </div>
     </Dialog>
   );
 };

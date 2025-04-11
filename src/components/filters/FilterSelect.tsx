@@ -1,7 +1,5 @@
 "use client";
 
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-
 interface FilterSelectProps {
   label: string;
   options: { value: string; label: string }[];
@@ -13,7 +11,7 @@ const FilterSelect = ({ label, options, value, onChange }: FilterSelectProps) =>
   return (
     <div className="space-y-1">
       <label className="text-sm font-medium">{label}</label>
-      <Select value={value} onValueChange={onChange}>
+      {/* <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder={`Chọn ${label.toLowerCase()}`} />
         </SelectTrigger>
@@ -24,7 +22,7 @@ const FilterSelect = ({ label, options, value, onChange }: FilterSelectProps) =>
             </SelectItem>
           ))}
         </SelectContent>
-      </Select>
+      </Select> */}
     </div>
   );
 };

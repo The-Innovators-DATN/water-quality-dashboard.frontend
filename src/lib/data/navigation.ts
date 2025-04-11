@@ -18,8 +18,8 @@ import {
       path: "/dashboard",
       hasSubmenu: true,
       submenu: [
-        { id: "dashboard-water", title: "Dashboard quan trắc nước", path: "/dashboard/water", icon: null },
-        { id: "dashboard-admin", title: "Dashboard quản trị viên", path: "/dashboard/admin", icon: null }
+        { id: "dashboard-water", title: "Nước", path: "/dashboard/water", icon: null },
+        { id: "dashboard-admin", title: "Admin", path: "/dashboard/admin", icon: null }
       ]
     },
     { id: "data", title: "Dữ liệu", icon: Server, path: "/data" },

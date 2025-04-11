@@ -19,7 +19,7 @@ export default function Sidebar() {
   useEffect(() => {
     setIsClient(true);
     if (user) {
-      setUserName(user.fullName || "");
+      setUserName(user.firstName || "");
       
       let roleText = "Người dùng";
       if (user.role === "admin") {
@@ -33,7 +33,7 @@ export default function Sidebar() {
   }, [user]);
 
   return (
-    <div className="h-screen w-auto p-4 space-y-2 bg-[#132d65] text-white flex flex-col">
+    <div className="h-screen w-50 p-4 space-y-2 bg-[#132d65] text-white flex flex-col">
       <SidebarHeader />
       <NavigationMenu items={navItems} />
       {isClient && (

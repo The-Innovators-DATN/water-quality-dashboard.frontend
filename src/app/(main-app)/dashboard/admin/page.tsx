@@ -22,7 +22,7 @@ export default function DashboardPage() {
           <div className="col-span-6">
             <ChartContainer type="line" title="Tần suất truy cập các trạm" />
           </div>
-          <div className="col-span-3">
+          <div className="col-span-6">
             <ChartContainer type="pie" title="Loại trạm" />
           </div>
         </div>

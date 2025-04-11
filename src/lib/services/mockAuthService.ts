@@ -1,6 +1,7 @@
 export interface User {
     id: string;
-    fullName: string;
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
     role: string;
@@ -9,21 +10,24 @@ export interface User {
 const MOCK_USERS: User[] = [
     {
       id: "user-1",
-      fullName: "Nguyễn Văn Admin",
+      firstName: "Admin",
+      lastName: "Nguyễn",
       email: "admin@example.com",
       password: "Admin@123",
       role: "admin"
     },
     {
       id: "user-2",
-      fullName: "Trần Thị Kỹ Thuật",
+      firstName: "Kỹ Thuật",
+      lastName: "Trần",
       email: "tech@example.com",
       password: "Tech@123",
       role: "technician"
     },
     {
       id: "user-3", 
-      fullName: "Lê Văn Nhân Viên",
+      firstName: "Nhân Viên",
+      lastName: "Lê",
       email: "user@example.com",
       password: "User@123",
       role: "user"
@@ -53,7 +57,8 @@ export const mockAuthService = {
       return {
         user: {
           id: user.id,
-          fullName: user.fullName,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           role: user.role
         },
@@ -61,7 +66,7 @@ export const mockAuthService = {
       };
     },
     
-    register: async (fullName: string, email: string, password: string) => {
+    register: async (firstName: string, lastName: string, email: string, password: string) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       if (MOCK_USERS.some(u => u.email === email)) {
@@ -70,7 +75,8 @@ export const mockAuthService = {
       
       const newUser: User = {
         id: `user-${MOCK_USERS.length + 1}`,
-        fullName,
+        firstName,
+        lastName,
         email,
         password,
         role: "user"
@@ -167,7 +173,8 @@ export const mockAuthService = {
       
       return {
         id: user.id,
-        fullName: user.fullName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role
       };
