@@ -71,11 +71,13 @@ export default function LoginPage() {
       localStorage.setItem('token', result.token);
       
       // Lưu thông tin người dùng vào store
-      const { login } = await import('@/lib/stores/useAuthStore');
+      const { useAuthStore } = await import('@/lib/stores/useAuthStore');
+      const { login } = useAuthStore.getState();
+      login(result.user, result.token);
       login(result.user, result.token);
       
       // Chuyển hướng sau khi đăng nhập thành công
-      const nextUrl = new URLSearchParams(window.location.search).get('from') || "/dashboard/water";
+      const nextUrl = new URLSearchParams(window.location.search).get('from') || "/";
       router.push(nextUrl);
       
     } catch (error) {
