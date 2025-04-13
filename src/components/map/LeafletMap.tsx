@@ -18,7 +18,7 @@ export default function LeafletMap({ geojsonData, onFeatureClick }: LeafletMapPr
         <MapContainer
           center={[10.7769, 106.7009]}
           minZoom={2}
-          zoom={3}
+          zoom={2}
           maxZoom={16}
           className="w-full h-full relative z-0"
           worldCopyJump={false}
