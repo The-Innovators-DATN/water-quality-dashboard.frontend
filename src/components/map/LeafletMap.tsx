@@ -27,7 +27,7 @@ export default function LeafletMap({ geojsonData, onFeatureClick }: LeafletMapPr
         >
             <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                attribution="&copy; <a href='https://carto.com/'>CARTO</a>"
             />
             {geojsonData?.features?.length && geojsonData.features.length > 0 && (
                 <GeoJSONLayer geojsonData={geojsonData} onFeatureClick={onFeatureClick} />

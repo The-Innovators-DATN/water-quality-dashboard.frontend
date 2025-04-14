@@ -1,8 +1,8 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import LineChart from '@/components/charts/LineChart'
-// import BoxPlot from '@/components/BoxPlot'
+import { useEffect, useState } from "react"
+import LineChart from "@/components/charts/LineChart"
+// import BoxPlot from "@/components/BoxPlot"
 
 type Target = {
     target_type: string
@@ -27,7 +27,7 @@ export default function DashboardPage() {
     const [dashboard, setDashboard] = useState<DashboardConfig | null>(null)
 
     useEffect(() => {
-        fetch('/dashboard.json')
+        fetch("/dashboard.json")
         .then(res => res.json())
         .then(setDashboard)
     }, [])  
@@ -43,10 +43,10 @@ export default function DashboardPage() {
                 className={`col-span-${panel.gridPos.w} row-span-${panel.gridPos.h}`}
             >
                 <h2 className="text-lg font-bold mb-2">{panel.title}</h2>
-                {panel.type === 'line_chart' && (
+                {panel.type === "line_chart" && (
                     <LineChart targets={panel.targets} />
                 )}
-                {panel.type === 'box_plot' && (
+                {panel.type === "box_plot" && (
                     <div className="text-sm italic text-gray-400">Chưa hỗ trợ box plot</div>
                 // <BoxPlot api={target.api} color={target.color} />
                 )}

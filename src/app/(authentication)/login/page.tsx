@@ -58,47 +58,59 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
     setLoading(true);
     setErrors({ email: "", password: "", general: "" });
-
+  
     try {
-      const { mockAuthService } = await import('@/lib/services/mockAuthService');
-      
-      const result = await mockAuthService.login(formData.email, formData.password);
-      
-      // Lưu thông tin vào localStorage để duy trì phiên đăng nhập
-      localStorage.setItem('token', result.token);
-      
-      // Lưu thông tin người dùng vào store
-      const { useAuthStore } = await import('@/lib/stores/useAuthStore');
-      const { login } = useAuthStore.getState();
-      login(result.user, result.token);
-      login(result.user, result.token);
-      
-      // Chuyển hướng sau khi đăng nhập thành công
-      const nextUrl = new URLSearchParams(window.location.search).get('from') || "/";
-      router.push(nextUrl);
-      
-    } catch (error) {
-      if (error instanceof Error) {
-        setErrors((prev) => ({
-          ...prev,
-          general: error.message
-        }));
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          general: "Đăng nhập thất bại. Vui lòng thử lại."
-        }));
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+  
+      const data = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(data.message || "Đăng nhập thất bại.");
       }
+  
+      const { token } = data;
+  
+      // ✅ Decode token để lấy user_id từ payload (nếu backend không trả về user_id riêng)
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const user_id = payload.sub; // thường là user UUID hoặc ID
+  
+      // Lưu token
+      localStorage.setItem("token", token);
+      localStorage.setItem("refresh_token", data.refreshToken);
+  
+      // Gọi Zustand store
+      const { useAuthStore } = await import("@/lib/stores/useAuthStore");
+      const { login } = useAuthStore.getState();
+      login(user_id, token);
+  
+      // Điều hướng
+      const nextUrl = new URLSearchParams(window.location.search).get("from") || "/";
+      router.push(nextUrl);
+  
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        general:
+          error instanceof Error
+            ? error.message
+            : "Đăng nhập thất bại. Vui lòng thử lại.",
+      }));
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   return (
-    <div className="min-h-screen bg-[url('/water-monitoring-bg.jpg')] bg-cover bg-center flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-cover bg-center flex items-center justify-center p-4 relative">
       {/* Overlay màu xanh nước biển mờ */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 to-cyan-800/70 backdrop-blur-sm"></div>
       

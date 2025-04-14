@@ -37,13 +37,18 @@ export default function Sidebar() {
           <nav className="mt-6 flex flex-col gap-y-2">
             {adminNavItems.map((item) => {
               const Icon = item.icon;
+              const isActive =
+                item.path === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.path);
+
               return (
                 <Link
                   key={item.id}
                   href={item.path}
                   className={clsx(
                     "flex items-center gap-x-2 px-3 py-2 rounded hover:bg-gray-100 transition-colors",
-                    pathname === item.path && "bg-gray-100 font-semibold"
+                    isActive && "bg-gray-100 font-semibold"
                   )}
                 >
                   <Icon size={18} />
