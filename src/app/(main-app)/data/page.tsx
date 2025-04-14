@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, AlertCircle, Loader2, Database } from 'lucide-react';
-import Link from 'next/link';
-import { useStationStore } from '@/lib/stores/useStationStore';
+import { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, AlertCircle, Loader2, Database } from "lucide-react";
+import Link from "next/link";
+import { useStationStore } from "@/lib/stores/useStationStore";
 
 export default function DataPage() {
-  const [activeTab, setActiveTab] = useState<'stations' | 'parameters'>('stations');
+  const [activeTab, setActiveTab] = useState<"stations" | "parameters">("stations");
   const { 
     stations, 
     selectedStations, 
@@ -29,7 +29,7 @@ export default function DataPage() {
     setSelectAll(selectedStations.length === stations.length && stations.length > 0);
   }, [selectedStations, stations]);
 
-  const handleTabChange = (tab: 'stations' | 'parameters') => {
+  const handleTabChange = (tab: "stations" | "parameters") => {
     setActiveTab(tab);
   };
 
@@ -43,21 +43,21 @@ export default function DataPage() {
   };
 
   const handleDeleteStation = async (id: number) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa trạm này?')) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa trạm này?")) {
       await deleteStation(id);
     }
   };
 
   const getStatusColorClass = (status: string) => {
     switch (status) {
-      case 'Đang hoạt động':
-        return 'bg-green-500';
-      case 'Tạm dừng':
-        return 'bg-yellow-500';
-      case 'Bảo trì':
-        return 'bg-red-500';
+      case "Đang hoạt động":
+        return "bg-green-500";
+      case "Tạm dừng":
+        return "bg-yellow-500";
+      case "Bảo trì":
+        return "bg-red-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -94,14 +94,14 @@ export default function DataPage() {
       <div className="w-full flex items-center justify-between mb-4">
         <div className="flex border-b">
           <button
-            className={`py-2 px-4 ${activeTab === 'stations' ? 'border-b-2 border-blue-500 text-blue-500 font-medium' : 'text-gray-500'}`}
-            onClick={() => handleTabChange('stations')}
+            className={`py-2 px-4 ${activeTab === "stations" ? "border-b-2 border-blue-500 text-blue-500 font-medium" : "text-gray-500"}`}
+            onClick={() => handleTabChange("stations")}
           >
             Danh sách các trạm
           </button>
           <button
-            className={`py-2 px-4 ${activeTab === 'parameters' ? 'border-b-2 border-blue-500 text-blue-500 font-medium' : 'text-gray-500'}`}
-            onClick={() => handleTabChange('parameters')}
+            className={`py-2 px-4 ${activeTab === "parameters" ? "border-b-2 border-blue-500 text-blue-500 font-medium" : "text-gray-500"}`}
+            onClick={() => handleTabChange("parameters")}
           >
             Các chỉ số
           </button>
@@ -135,7 +135,7 @@ export default function DataPage() {
         </div>
       )}
 
-      {activeTab === 'stations' && (
+      {activeTab === "stations" && (
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse">
             <thead>
@@ -213,7 +213,7 @@ export default function DataPage() {
         </div>
       )}
 
-      {activeTab === 'parameters' && (
+      {activeTab === "parameters" && (
         <div className="p-4 border rounded">
           <p className="text-gray-500">Nội dung danh sách các chỉ số sẽ hiển thị ở đây.</p>
         </div>

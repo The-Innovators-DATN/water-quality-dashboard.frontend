@@ -1,32 +1,42 @@
-'use client';
+"use client";
 
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
 
 import {
-  Monitor, ClipboardList, Calendar, Share, Table, BarChart,
-} from 'lucide-react';
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+  Monitor, ClipboardList, Table, BarChart, ChevronDown, ChevronUp,
+} from "lucide-react";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 
-import WQIGauge from '@/components/WQIGauge';
-import AlertHistoryTable from '@/components/AlertHistoryTable';
-import RefreshSelector from '@/components/RefreshSelector';
-import LineChart from "@/components/charts/LineChart";
+import WQIGauge from "@/components/WQIGauge";
+import AlertHistoryTable from "@/components/AlertHistoryTable";
+// import RefreshSelector from "@/components/RefreshSelector";
+// import LineChart from "@/components/charts/LineChart";
 
 export default function StationDetailPage() {
   const params = useParams();
   const stationId = params.stationId;
 
   const [stationData, setStationData] = useState<StationData | null>(null);
-  const [time, setTime] = useState(format(new Date(), "HH:mm:ss"));
+  const [time, setTime] = useState("");
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [selectedParams, setSelectedParams] = useState<string[]>([]);
-  const [activeAction, setActiveAction] = useState<ActionType | null>("chart");
-  const [refreshInterval, setRefreshInterval] = useState(60);
-  const [timeRange, setTimeRange] = useState("24h");
-  const [triggerFetch, setTriggerFetch] = useState(false);
+  const [parameters, setParameters] = useState<Parameter[]>([]);
+  const [groupedParameters, setGroupedParameters] = useState<Record<string, Parameter[]>>({});
 
-  const [viewStep, setViewStep] = useState<ViewStep>("select");
+  // const [refreshInterval, setRefreshInterval] = useState(60);
+  // const [timeRange, setTimeRange] = useState("24h");
+  // const [triggerFetch, setTriggerFetch] = useState(false);
+
+  // const [viewStep, setViewStep] = useState<ViewStep>("select");
+
+  const toggleGroup = (group: string) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [group]: !prev[group]
+    }));
+  };
 
   useEffect(() => {
     setStationData({
@@ -55,36 +65,61 @@ export default function StationDetailPage() {
     );
   };
 
-  const handleAction = (action: ActionType) => {
-    if (selectedParams.length === 0) {
-      alert("Vui lòng chọn ít nhất một thông số.");
-      return;
-    }
+  // const handleAction = (action: ActionType) => {
+  //   if (selectedParams.length === 0) {
+  //     alert("Vui lòng chọn ít nhất một thông số.");
+  //     return;
+  //   }
   
-    setActiveAction(action);
+  //   setActiveAction(action);
   
-    switch (action) {
-      case "chart":
-        setViewStep("chart");
-        break;
-      case "stats":
-        setViewStep("stats"); // Bạn có thể thêm view thống kê nếu có
-        break;
-      case "export":
-        console.log("Exporting report for:", selectedParams);
-        break;
-      case "schedule":
-        console.log("Scheduling report for:", selectedParams);
-        break;
-    }
-  };
+  //   switch (action) {
+  //     case "chart":
+  //       setViewStep("chart");
+  //       break;
+  //     case "stats":
+  //       setViewStep("stats"); // Bạn có thể thêm view thống kê nếu có
+  //       break;
+  //     case "export":
+  //       console.log("Exporting report for:", selectedParams);
+  //       break;
+  //     case "schedule":
+  //       console.log("Scheduling report for:", selectedParams);
+  //       break;
+  //   }
+  // };
 
-  if (!stationData) return <div>Loading...</div>;
+  useEffect(() => {
+    const fetchParameters = async () => {
+      try {
+        const res = await fetch("/api/parameters");
+        const data = await res.json();
+
+        const parameterList = data?.parameters || [];
+  
+        setParameters(parameterList);
+  
+        const grouped = parameterList.reduce((acc: Record<string, Parameter[]>, param: Parameter) => {
+          const group = param.parameterGroup || "Khác";
+          if (!acc[group]) acc[group] = [];
+          acc[group].push(param);
+          return acc;
+        }, {});        
+        setGroupedParameters(grouped);
+      } catch (err) {
+        console.error("Lỗi khi gọi API nội bộ:", err);
+      }
+    };
+  
+    fetchParameters();
+  }, []);
+
+  console.log(parameters);
 
   return (
-    <div className="w-full p-6">
+    <div className="w-full h-full p-4">
       <TabGroup className="w-full h-full flex flex-col">
-        <TabList className="flex shrink-0 space-x-4">
+        <TabList className="flex">
           <Tab className="px-2 py-1 flex flex-col items-center text-xs space-y-1 data-[selected]:text-blue-500 data-[selected]:border-b-2 data-[selected]:border-blue-500">
             <Monitor size={18} />
             <span>Bảng điều khiển</span>
@@ -96,7 +131,6 @@ export default function StationDetailPage() {
         </TabList>
 
         <TabPanels className="h-full mt-2 border rounded-lg overflow-hidden">
-          {/* Dashboard */}
           <TabPanel className="grid grid-rows-4 h-full">
             <div className="row-span-1 bg-blue-500 text-white p-2 rounded-t-lg space-y-2">
               <p className="font-bold">{stationData?.name}</p>
@@ -133,138 +167,63 @@ export default function StationDetailPage() {
           </TabPanel>
 
           <TabPanel className="h-full overflow-auto">
-            <div className="flex-1 h-full flex flex-col min-w-0">
-              <div className="flex items-center justify-between border-b px-6 py-2 text-sm">
-                {activeAction === "chart" && (
-                  <div className="flex items-center gap-3">
-                    <button
-                      className="text-sm text-blue-600 hover:underline ml-4"
-                      onClick={() => {
-                        setViewStep("select");
-                        setActiveAction(null);
-                      }}
-                    >
-                      ← Quay lại
-                    </button>
-                    <select
-                      className="border rounded px-2 py-1 h-8 text-sm"
-                      value={timeRange}
-                      onChange={(e) => setTimeRange(e.target.value)}
-                    >
-                      <option value="1h">1 giờ trước</option>
-                      <option value="6h">6 giờ trước</option>
-                      <option value="12h">12 giờ trước</option>
-                      <option value="24h">24 giờ trước</option>
-                    </select>
+            <div className="h-full flex">
+              <div className="w-52 flex flex-col border-r">
+                <div className="w-full h-10 flex justify-center items-center border-b px-2 py-1">
+                  <p className="">Chọn thông số</p>
+                </div>
 
-                    <RefreshSelector
-                      onRefresh={() => setTriggerFetch((prev) => !prev)}
-                      onIntervalChange={(val: number) => setRefreshInterval(val)}
-                    />
-                  </div>
-                )}
+                <div className="overflow-auto h-full flex-1">
+                  {Object.entries(groupedParameters).map(([group, params]) => (
+                    <div key={group} className="border-b p-2">
+                      <button
+                        onClick={() => toggleGroup(group)}
+                        className="w-full flex items-center justify-between text-left font-bold"
+                      >
+                        {group}
+                        {openGroups[group] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-4">
-                    <button
-                      className="flex items-center gap-1 text-sm"
-                      onClick={() => handleAction("schedule")}
-                    >
-                      <Calendar size={16} />
-                      <span>Lập lịch báo cáo</span>
-                    </button>
-                    <button
-                      className="flex items-center gap-1 text-sm"
-                      onClick={() => handleAction("export")}
-                    >
-                      <Share size={16} />
-                      <span>Xuất báo cáo</span>
-                    </button>
-                  </div>
-
-                  <div className="w-px h-5 bg-gray-300" />
-
-                  <div className="flex items-center gap-4">
-                    <button
-                      className={`flex items-center gap-1 text-sm ${
-                        activeAction === "stats"
-                          ? "text-blue-500 border-b-2 border-blue-500"
-                          : "hover:text-blue-500"
-                      }`}
-                      onClick={() => handleAction("stats")}
-                    >
-                      <Table size={16} />
-                      <span>Thống kê</span>
-                    </button>
-                    <button
-                      className={`flex items-center gap-1 text-sm ${
-                        activeAction === "chart"
-                          ? "text-blue-500 border-b-2 border-blue-500"
-                          : "hover:text-blue-500"
-                      }`}
-                      onClick={() => handleAction("chart")}
-                    >
-                      <BarChart size={16} />
-                      <span>Biểu đồ</span>
-                    </button>
-                  </div>
+                      {openGroups[group] && (
+                        <div className="mt-2 space-y-1">
+                          {params.map((param) => (
+                            <div key={param.id} className="flex items-center gap-x-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedParams.includes(param.name)}
+                                onChange={() => toggleParam(param.name)}
+                              />
+                              <label>{param.name}</label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto px-6 py-4">
-                {viewStep === "select" && (
-                  <div className="space-y-4">
-                    <p className="font-medium text-lg">Chọn thông số để xem biểu đồ:</p>
+              <TabGroup className="flex flex-col flex-1">
+                <TabList className="w-full h-10 flex items-center border-b px-2 py-1">
+                  <Tab className="flex items-center gap-x-1 px-2 py-1 data-[selected]:text-blue-500 data-[selected]:border-b-2 data-[selected]:border-blue-500">
+                    <BarChart size={20} />
+                    <p>Biểu đồ</p>
+                  </Tab>
+                  <Tab className="flex items-center gap-x-1 px-2 py-1 data-[selected]:text-blue-500 data-[selected]:border-b-2 data-[selected]:border-blue-500">
+                    <Table size={20} />
+                    <p>Thống kê</p>
+                  </Tab>
+                </TabList>
 
-                    <div className="overflow-auto border rounded">
-                      <table className="min-w-full text-sm">
-                        <thead className="bg-gray-100 text-left">
-                          <tr>
-                            <th className="px-4 py-2"><input type="checkbox" /></th>
-                            <th className="px-4 py-2">Nhóm thông số</th>
-                            <th className="px-4 py-2">Thông số</th>
-                            <th className="px-4 py-2">Viết tắt</th>
-                            <th className="px-4 py-2">Đơn vị</th>
-                            <th className="px-4 py-2">Số lượng giá trị</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {availableParameters.map((param, idx) => (
-                            <tr key={idx} className="hover:bg-gray-50 border-t">
-                              <td className="px-4 py-2">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedParams.includes(param)}
-                                  onChange={() => toggleParam(param)}
-                                />
-                              </td>
-                              <td className="px-4 py-2">Nhóm thông số mẫu</td>
-                              <td className="px-4 py-2">{param}</td>
-                              <td className="px-4 py-2">{param}</td>
-                              <td className="px-4 py-2">µg/l</td>
-                              <td className="px-4 py-2">999999</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+                <TabPanels>
+                  <TabPanel></TabPanel>
+                  <TabPanel className="flex-1 flex flex-col">
+                    
+                  </TabPanel>
 
-                {viewStep === "chart" && (
-                  <LineChart
-                    targets={selectedParams.map(param => ({
-                      target_type: "parameter",
-                      display_name: param,
-                      color: chartColorMap[param] || "#0ea5e9",
-                      api: `/api/data/${encodeURIComponent(param)}`
-                    }))}
-                    refreshInterval={refreshInterval}
-                    timeRange={timeRange}
-                    triggerFetch={triggerFetch}
-                  />
-                )}
-              </div>
+                  
+                </TabPanels>
+              </TabGroup>
             </div>
           </TabPanel>
         </TabPanels>
@@ -273,20 +232,26 @@ export default function StationDetailPage() {
   );
 }
 
-const availableParameters = ["pH", "Nhiệt độ nước", "TSS", "NH4", "NO3", "Coliform"];
+// const availableParameters = ["pH", "Nhiệt độ nước", "TSS", "NH4", "NO3", "Coliform"];
 
-const chartColorMap: Record<string, string> = {
-  "pH": "#f59e0b",
-  "Nhiệt độ nước": "#10b981",
-  "TSS": "#3b82f6",
-  "NH4": "#ef4444",
-  "NO3": "#8b5cf6",
-  "Coliform": "#ec4899"
-};
+// const chartColorMap: Record<string, string> = {
+//   "pH": "#f59e0b",
+//   "Nhiệt độ nước": "#10b981",
+//   "TSS": "#3b82f6",
+//   "NH4": "#ef4444",
+//   "NO3": "#8b5cf6",
+//   "Coliform": "#ec4899"
+// };
 
-type ViewStep = "select" | "stats" | "chart";
+// type ViewStep = "select" | "stats" | "chart";
 
-type ActionType = "chart" | "export" | "schedule" | "stats";
+// type ActionType = "chart" | "export" | "schedule" | "stats";
+
+interface Parameter {
+  id: string;
+  name: string;
+  parameterGroup?: string;
+}
 
 interface StationData {
   id?: string;

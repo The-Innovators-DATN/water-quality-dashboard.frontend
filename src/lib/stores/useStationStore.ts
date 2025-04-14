@@ -1,7 +1,7 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type StationType = 'Sông' | 'Hồ' | 'Biển' | 'Nước ngầm';
-export type StationStatus = 'Đang hoạt động' | 'Tạm dừng' | 'Bảo trì';
+export type StationType = "Sông" | "Hồ" | "Biển" | "Nước ngầm";
+export type StationStatus = "Đang hoạt động" | "Tạm dừng" | "Bảo trì";
 
 export interface Station {
   id: number;
@@ -21,7 +21,7 @@ interface StationState {
   
   // Actions
   fetchStations: () => Promise<void>;
-  addStation: (station: Omit<Station, 'id'>) => Promise<void>;
+  addStation: (station: Omit<Station, "id">) => Promise<void>;
   updateStation: (id: number, data: Partial<Station>) => Promise<void>;
   deleteStation: (id: number) => Promise<void>;
   selectStation: (id: number) => void;
@@ -35,12 +35,12 @@ export const useStationStore = create<StationState>((set, get) => ({
   stations: [
     {
       id: 1,
-      name: 'Trạm Đồng Tháp',
-      type: 'Sông',
-      lastUpdateTime: '31-12-2024 22:25:59',
-      status: 'Đang hoạt động',
-      location: 'Đồng Tháp, Việt Nam',
-      provider: 'Bách Khoa'
+      name: "Trạm Đồng Tháp",
+      type: "Sông",
+      lastUpdateTime: "31-12-2024 22:25:59",
+      status: "Đang hoạt động",
+      location: "Đồng Tháp, Việt Nam",
+      provider: "Bách Khoa"
     }
   ],
   selectedStations: [],
@@ -51,7 +51,7 @@ export const useStationStore = create<StationState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Trong thực tế sẽ gọi API ở đây
-      // const response = await fetch('/api/stations');
+      // const response = await fetch("/api/stations");
       // const data = await response.json();
       // set({ stations: data, isLoading: false });
       
@@ -61,30 +61,30 @@ export const useStationStore = create<StationState>((set, get) => ({
           stations: [
             {
               id: 1,
-              name: 'Trạm Đồng Tháp',
-              type: 'Sông',
-              lastUpdateTime: '31-12-2024 22:25:59',
-              status: 'Đang hoạt động',
-              location: 'Đồng Tháp, Việt Nam',
-              provider: 'Bách Khoa'
+              name: "Trạm Đồng Tháp",
+              type: "Sông",
+              lastUpdateTime: "31-12-2024 22:25:59",
+              status: "Đang hoạt động",
+              location: "Đồng Tháp, Việt Nam",
+              provider: "Bách Khoa"
             },
             {
               id: 2,
-              name: 'Trạm Cần Thơ',
-              type: 'Sông',
-              lastUpdateTime: '31-12-2024 21:15:30',
-              status: 'Đang hoạt động',
-              location: 'Cần Thơ, Việt Nam',
-              provider: 'Viện Môi Trường'
+              name: "Trạm Cần Thơ",
+              type: "Sông",
+              lastUpdateTime: "31-12-2024 21:15:30",
+              status: "Đang hoạt động",
+              location: "Cần Thơ, Việt Nam",
+              provider: "Viện Môi Trường"
             },
             {
               id: 3,
-              name: 'Trạm Hồ Tây',
-              type: 'Hồ',
-              lastUpdateTime: '31-12-2024 20:05:12',
-              status: 'Bảo trì',
-              location: 'Hà Nội, Việt Nam',
-              provider: 'Đại học Thủy Lợi'
+              name: "Trạm Hồ Tây",
+              type: "Hồ",
+              lastUpdateTime: "31-12-2024 20:05:12",
+              status: "Bảo trì",
+              location: "Hà Nội, Việt Nam",
+              provider: "Đại học Thủy Lợi"
             }
           ],
           isLoading: false
@@ -92,7 +92,7 @@ export const useStationStore = create<StationState>((set, get) => ({
       }, 500);
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tải dữ liệu', 
+        error: error instanceof Error ? error.message : "Đã xảy ra lỗi khi tải dữ liệu", 
         isLoading: false 
       });
     }
@@ -102,9 +102,9 @@ export const useStationStore = create<StationState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Trong thực tế sẽ gọi API POST ở đây
-      // const response = await fetch('/api/stations', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
+      // const response = await fetch("/api/stations", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
       //   body: JSON.stringify(station)
       // });
       // const newStation = await response.json();
@@ -123,7 +123,7 @@ export const useStationStore = create<StationState>((set, get) => ({
       });
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi thêm trạm mới', 
+        error: error instanceof Error ? error.message : "Đã xảy ra lỗi khi thêm trạm mới", 
         isLoading: false 
       });
     }
@@ -134,8 +134,8 @@ export const useStationStore = create<StationState>((set, get) => ({
     try {
       // Trong thực tế sẽ gọi API PUT ở đây
       // await fetch(`/api/stations/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
+      //   method: "PUT",
+      //   headers: { "Content-Type": "application/json" },
       //   body: JSON.stringify(data)
       // });
       
@@ -151,7 +151,7 @@ export const useStationStore = create<StationState>((set, get) => ({
       });
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi cập nhật trạm', 
+        error: error instanceof Error ? error.message : "Đã xảy ra lỗi khi cập nhật trạm", 
         isLoading: false 
       });
     }
@@ -162,7 +162,7 @@ export const useStationStore = create<StationState>((set, get) => ({
     try {
       // Trong thực tế sẽ gọi API DELETE ở đây
       // await fetch(`/api/stations/${id}`, {
-      //   method: 'DELETE'
+      //   method: "DELETE"
       // });
       
       // Cập nhật local
@@ -175,7 +175,7 @@ export const useStationStore = create<StationState>((set, get) => ({
       });
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi xóa trạm', 
+        error: error instanceof Error ? error.message : "Đã xảy ra lỗi khi xóa trạm", 
         isLoading: false 
       });
     }

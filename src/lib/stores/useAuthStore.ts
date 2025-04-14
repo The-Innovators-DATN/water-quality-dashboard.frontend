@@ -1,7 +1,6 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-// Kiểu dữ liệu User
 export interface User {
   id: string;
   firstName: string;
@@ -10,53 +9,51 @@ export interface User {
   role: string;
 }
 
-// Kiểu store
 export interface AuthState {
-  user: User | null;
+  user_id: number | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (userData: User, token: string) => void;
+  login: (usser_id: number, token: string) => void;
   logout: () => void;
-  updateUser: (userData: Partial<User>) => void;
+  // updateUser: (userData: Partial<User>) => void;
 }
 
-// Store chính xác và đơn giản nhất
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
-      user: null,
+    (set) => ({
+      user_id: null,
       token: null,
       isAuthenticated: false,
 
-      login: (userData: User, token: string) => {
+      login: (user_id: number, token: string) => {
         document.cookie = `token=${token}; path=/; max-age=86400; samesite=strict`;
         set({
-          user: userData,
+          user_id: user_id,
           token,
           isAuthenticated: true,
         });
       },
 
       logout: () => {
-        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
         set({
-          user: null,
+          user_id: null,
           token: null,
           isAuthenticated: false,
         });
       },
 
-      updateUser: (userData: Partial<User>) => {
-        const currentUser = get().user;
-        if (currentUser) {
-          set({
-            user: { ...currentUser, ...userData },
-          });
-        }
-      },
+      // updateUser: (userData: Partial<User>) => {
+      //   const currentUser = get().user;
+      //   if (currentUser) {
+      //     set({
+      //       user: { ...currentUser, ...userData },
+      //     });
+      //   }
+      // },
     }),
     {
-      name: 'water-monitoring-auth',
+      name: "water-monitoring-auth",
     }
   )
 );

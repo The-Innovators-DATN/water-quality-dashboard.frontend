@@ -36,13 +36,13 @@ export default function ForgotPasswordPage() {
 
     try {
       // Import mockAuthService để sử dụng
-      const { mockAuthService } = await import('@/lib/services/mockAuthService');
+      const { mockAuthService } = await import("@/lib/services/mockAuthService");
       
       // Gọi service quên mật khẩu
       const result = await mockAuthService.forgotPassword(email);
       
       // Trong môi trường development, hiển thị token để dễ test
-      console.log('[DEBUG] Reset token for testing:', result.debugToken);
+      console.log("[DEBUG] Reset token for testing:", result.debugToken);
       
       // Đánh dấu đã gửi thành công
       setSubmitted(true);
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[url('/water-monitoring-bg.jpg')] bg-cover bg-center flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-cover bg-center flex items-center justify-center p-4 relative">
       {/* Overlay màu xanh nước biển mờ */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 to-cyan-800/70 backdrop-blur-sm"></div>
       

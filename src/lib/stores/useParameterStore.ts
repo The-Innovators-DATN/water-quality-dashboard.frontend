@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "zustand"
 
 export interface Parameter {
   id: number
@@ -11,87 +11,87 @@ export interface Parameter {
 const mockParameters: Parameter[] = [
   {
     id: 1,
-    name: 'pH',
-    unit: 'pH',
-    description: 'Độ pH là thước đo tính axit hoặc kiềm của nước',
-    category: 'Hóa lý'
+    name: "pH",
+    unit: "pH",
+    description: "Độ pH là thước đo tính axit hoặc kiềm của nước",
+    category: "Hóa lý"
   },
   {
     id: 2,
-    name: 'Nhiệt độ',
-    unit: '°C',
-    description: 'Nhiệt độ của nước',
-    category: 'Hóa lý'
+    name: "Nhiệt độ",
+    unit: "°C",
+    description: "Nhiệt độ của nước",
+    category: "Hóa lý"
   },
   {
     id: 3,
-    name: 'DO (Oxy hòa tan)',
-    unit: 'mg/L',
-    description: 'Lượng oxy hòa tan trong nước',
-    category: 'Hóa lý'
+    name: "DO (Oxy hòa tan)",
+    unit: "mg/L",
+    description: "Lượng oxy hòa tan trong nước",
+    category: "Hóa lý"
   },
   {
     id: 4,
-    name: 'BOD (Nhu cầu oxy sinh hóa)',
-    unit: 'mg/L',
-    description: 'Lượng oxy cần thiết để vi sinh vật phân hủy chất hữu cơ',
-    category: 'Sinh hóa'
+    name: "BOD (Nhu cầu oxy sinh hóa)",
+    unit: "mg/L",
+    description: "Lượng oxy cần thiết để vi sinh vật phân hủy chất hữu cơ",
+    category: "Sinh hóa"
   },
   {
     id: 5,
-    name: 'Độ mặn',
-    unit: 'ppt',
-    description: 'Hàm lượng muối hòa tan trong nước',
-    category: 'Hóa lý'
+    name: "Độ mặn",
+    unit: "ppt",
+    description: "Hàm lượng muối hòa tan trong nước",
+    category: "Hóa lý"
   },
   {
     id: 6,
-    name: 'TSS (Tổng chất rắn lơ lửng)',
-    unit: 'mg/L',
-    description: 'Tổng số chất rắn không hòa tan trong nước',
-    category: 'Hóa lý'
+    name: "TSS (Tổng chất rắn lơ lửng)",
+    unit: "mg/L",
+    description: "Tổng số chất rắn không hòa tan trong nước",
+    category: "Hóa lý"
   },
   {
     id: 7,
-    name: 'Clorophyl-a',
-    unit: 'µg/L',
-    description: 'Chỉ số đo lường tảo trong nước',
-    category: 'Sinh học'
+    name: "Clorophyl-a",
+    unit: "µg/L",
+    description: "Chỉ số đo lường tảo trong nước",
+    category: "Sinh học"
   },
   {
     id: 8,
-    name: 'Độ cứng',
-    unit: 'mg/L',
-    description: 'Hàm lượng canxi và magiê trong nước',
-    category: 'Hóa lý'
+    name: "Độ cứng",
+    unit: "mg/L",
+    description: "Hàm lượng canxi và magiê trong nước",
+    category: "Hóa lý"
   },
   {
     id: 9,
-    name: 'Amoni',
-    unit: 'mg/L',
-    description: 'Hàm lượng amoni trong nước',
-    category: 'Hóa học'
+    name: "Amoni",
+    unit: "mg/L",
+    description: "Hàm lượng amoni trong nước",
+    category: "Hóa học"
   },
   {
     id: 10,
-    name: 'Nitrat',
-    unit: 'mg/L',
-    description: 'Hàm lượng nitrat (NO3-) trong nước',
-    category: 'Hóa học'
+    name: "Nitrat",
+    unit: "mg/L",
+    description: "Hàm lượng nitrat (NO3-) trong nước",
+    category: "Hóa học"
   },
   {
     id: 11,
-    name: 'Phosphat',
-    unit: 'mg/L',
-    description: 'Hàm lượng phosphat trong nước',
-    category: 'Hóa học'
+    name: "Phosphat",
+    unit: "mg/L",
+    description: "Hàm lượng phosphat trong nước",
+    category: "Hóa học"
   },
   {
     id: 12,
-    name: 'COD (Nhu cầu oxy hóa học)',
-    unit: 'mg/L',
-    description: 'Lượng oxy cần thiết để oxy hóa các chất hữu cơ',
-    category: 'Hóa học'
+    name: "COD (Nhu cầu oxy hóa học)",
+    unit: "mg/L",
+    description: "Lượng oxy cần thiết để oxy hóa các chất hữu cơ",
+    category: "Hóa học"
   }
 ];
 
@@ -102,7 +102,7 @@ interface ParameterState {
   
   // Actions
   fetchParameters: () => Promise<void>
-  addParameter: (parameter: Omit<Parameter, 'id'>) => Promise<void>
+  addParameter: (parameter: Omit<Parameter, "id">) => Promise<void>
   updateParameter: (id: number, data: Partial<Parameter>) => Promise<void>
   deleteParameter: (id: number) => Promise<void>
   
@@ -128,7 +128,7 @@ const useParameterStore = create<ParameterState>((set, get) => ({
       if (err instanceof Error) {
         set({ error: err.message, loading: false })
       } else {
-        set({ error: 'Lỗi khi thêm tham số', loading: false })
+        set({ error: "Lỗi khi thêm tham số", loading: false })
       }
     }
   },
@@ -149,7 +149,7 @@ const useParameterStore = create<ParameterState>((set, get) => ({
       if (err instanceof Error) {
         set({ error: err.message, loading: false })
       } else {
-        set({ error: 'Lỗi khi thêm tham số', loading: false })
+        set({ error: "Lỗi khi thêm tham số", loading: false })
       }
     }
   },
@@ -167,7 +167,7 @@ const useParameterStore = create<ParameterState>((set, get) => ({
       if (err instanceof Error) {
         set({ error: err.message, loading: false })
       } else {
-        set({ error: 'Lỗi khi thêm tham số', loading: false })
+        set({ error: "Lỗi khi thêm tham số", loading: false })
       }
     }
   },
@@ -185,7 +185,7 @@ const useParameterStore = create<ParameterState>((set, get) => ({
       if (err instanceof Error) {
         set({ error: err.message, loading: false })
       } else {
-        set({ error: 'Lỗi khi thêm tham số', loading: false })
+        set({ error: "Lỗi khi thêm tham số", loading: false })
       }
     }
   },

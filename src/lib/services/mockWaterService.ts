@@ -6,7 +6,7 @@ export interface MonitoringStation {
       lat: number;
       lng: number;
     };
-    status: 'active' | 'maintenance' | 'inactive';
+    status: "active" | "maintenance" | "inactive";
     lastUpdate: string;
   }
 
@@ -28,7 +28,7 @@ export interface MonitoringStation {
       salinity: number;     // độ mặn (ppt)
     };
     wqi: number;            // chỉ số chất lượng nước (0-100)
-    qualityLevel: 'excellent' | 'good' | 'medium' | 'poor' | 'very-poor';
+    qualityLevel: "excellent" | "good" | "medium" | "poor" | "very-poor";
     alerts: string[];       // các cảnh báo (nếu có)
   }
   
@@ -42,7 +42,7 @@ export interface MonitoringStation {
     value: number;
     threshold: number;
     message: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
+    severity: "low" | "medium" | "high" | "critical";
     acknowledged: boolean;
   }
   
@@ -130,33 +130,33 @@ export interface MonitoringStation {
     const alerts: string[] = [];
     if (isAlert) {
       // Chọn ngẫu nhiên 1-2 thông số để tạo cảnh báo
-      const alertTypes = ['ph', 'do', 'cod', 'ammonium', 'turbidity'];
+      const alertTypes = ["ph", "do", "cod", "ammonium", "turbidity"];
       const numAlerts = Math.floor(Math.random() * 2) + 1;
       const selectedAlerts = alertTypes.sort(() => 0.5 - Math.random()).slice(0, numAlerts);
       
       for (const alert of selectedAlerts) {
         switch (alert) {
-          case 'ph':
+          case "ph":
             // pH ngoài khoảng 6.5-8.5
             ph = Math.random() > 0.5 ? randomInRange(8.6, 9.5) : randomInRange(5.5, 6.4);
-            alerts.push(`pH ${ph > 8.5 ? 'cao' : 'thấp'}: ${ph}`);
+            alerts.push(`pH ${ph > 8.5 ? "cao" : "thấp"}: ${ph}`);
             break;
-          case 'do':
+          case "do":
             // DO thấp hơn 4 mg/L
             do_value = randomInRange(2, 3.9);
             alerts.push(`Oxy hòa tan thấp: ${do_value} mg/L`);
             break;
-          case 'cod':
+          case "cod":
             // COD cao hơn 30 mg/L
             cod = randomInRange(31, 50);
             alerts.push(`COD cao: ${cod} mg/L`);
             break;
-          case 'ammonium':
+          case "ammonium":
             // Amoni cao hơn 0.5 mg/L
             ammonium = randomInRange(0.6, 1.5);
             alerts.push(`Amoni cao: ${ammonium} mg/L`);
             break;
-          case 'turbidity':
+          case "turbidity":
             // Độ đục cao hơn 50 NTU
             turbidity = randomInRange(51, 100);
             alerts.push(`Độ đục cao: ${turbidity} NTU`);
@@ -192,17 +192,17 @@ export interface MonitoringStation {
     wqi = Math.round((phScore * 0.15 + doScore * 0.2 + codScore * 0.15 + bodScore * 0.15 + ammoniumScore * 0.15 + turbidityScore * 0.2));
     
     // Xác định mức chất lượng nước dựa trên WQI
-    let qualityLevel: WaterQualityData['qualityLevel'];
+    let qualityLevel: WaterQualityData["qualityLevel"];
     if (wqi >= 90) {
-      qualityLevel = 'excellent';
+      qualityLevel = "excellent";
     } else if (wqi >= 75) {
-      qualityLevel = 'good';
+      qualityLevel = "good";
     } else if (wqi >= 50) {
-      qualityLevel = 'medium';
+      qualityLevel = "medium";
     } else if (wqi >= 25) {
-      qualityLevel = 'poor';
+      qualityLevel = "poor";
     } else {
-      qualityLevel = 'very-poor';
+      qualityLevel = "very-poor";
     }
     
     return {
@@ -285,36 +285,36 @@ export interface MonitoringStation {
         // Tạo cảnh báo cho mỗi thông báo cảnh báo
         measurement.alerts.forEach(alertMsg => {
           // Xác định thông số và giá trị từ thông báo cảnh báo
-          let parameter = '';
+          let parameter = "";
           let value = 0;
           let threshold = 0;
-          let severity: Alert['severity'] = 'medium';
+          let severity: Alert["severity"] = "medium";
           
-          if (alertMsg.includes('pH')) {
-            parameter = 'pH';
+          if (alertMsg.includes("pH")) {
+            parameter = "pH";
             value = measurement.parameters.ph;
             threshold = value > 8.5 ? 8.5 : 6.5;
-            severity = Math.abs(value - 7) > 1.5 ? 'high' : 'medium';
-          } else if (alertMsg.includes('Oxy')) {
-            parameter = 'Oxy hòa tan (DO)';
+            severity = Math.abs(value - 7) > 1.5 ? "high" : "medium";
+          } else if (alertMsg.includes("Oxy")) {
+            parameter = "Oxy hòa tan (DO)";
             value = measurement.parameters.do;
             threshold = 4;
-            severity = value < 3 ? 'high' : 'medium';
-          } else if (alertMsg.includes('COD')) {
-            parameter = 'COD';
+            severity = value < 3 ? "high" : "medium";
+          } else if (alertMsg.includes("COD")) {
+            parameter = "COD";
             value = measurement.parameters.cod;
             threshold = 30;
-            severity = value > 40 ? 'high' : 'medium';
-          } else if (alertMsg.includes('Amoni')) {
-            parameter = 'Amoni';
+            severity = value > 40 ? "high" : "medium";
+          } else if (alertMsg.includes("Amoni")) {
+            parameter = "Amoni";
             value = measurement.parameters.ammonium;
             threshold = 0.5;
-            severity = value > 1 ? 'high' : 'medium';
-          } else if (alertMsg.includes('đục')) {
-            parameter = 'Độ đục';
+            severity = value > 1 ? "high" : "medium";
+          } else if (alertMsg.includes("đục")) {
+            parameter = "Độ đục";
             value = measurement.parameters.turbidity;
             threshold = 50;
-            severity = value > 70 ? 'high' : 'medium';
+            severity = value > 70 ? "high" : "medium";
           }
           
           // Tạo ID cảnh báo duy nhất

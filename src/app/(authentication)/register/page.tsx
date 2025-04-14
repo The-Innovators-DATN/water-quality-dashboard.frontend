@@ -11,16 +11,14 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
     agreeToTerms: false,
   });
   const [errors, setErrors] = useState({
-    firstName: "",
-    lastName: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -52,13 +50,8 @@ export default function RegisterPage() {
     let valid = true;
     const newErrors = { ...errors };
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "Tên là bắt buộc";
-      valid = false;
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Họ là bắt buộc";
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Họ tên là bắt buộc";
       valid = false;
     }
 
@@ -98,52 +91,55 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
     setLoading(true);
     setErrors({
-      firstName: "",
-      lastName: "",
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
       agreeToTerms: "",
       general: "",
     });
-
+  
     try {
-      // Import mockAuthService để sử dụng
-      const { mockAuthService } = await import('@/lib/services/mockAuthService');
-      
-      // Gọi service đăng ký
-      await mockAuthService.register(
-        formData.firstName,
-        formData.lastName,
-        formData.email,
-        formData.password
-      );
-
-      // Redirect đến trang đăng nhập với thông báo đăng ký thành công
-      router.push("/login?registered=true");
-      
-    } catch (error) {
-      if (error instanceof Error) {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullname: formData.fullName.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
+  
+      const result = await res.json();
+  
+      if (!res.ok) {
         setErrors((prev) => ({
           ...prev,
-          general: error.message
+          general: result.message || "Đăng ký thất bại. Vui lòng thử lại.",
         }));
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          general: "Đăng ký thất bại. Vui lòng thử lại."
-        }));
+        return;
       }
+  
+      router.push("/login?registered=true");
+    } catch (error) {
+      console.error("Registration error:", error);
+      setErrors((prev) => ({
+        ...prev,
+        general: "Lỗi máy chủ hoặc mạng. Vui lòng thử lại.",
+      }));
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
-    <div className="min-h-screen bg-[url('/water-monitoring-bg.jpg')] bg-cover bg-center flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-cover bg-center flex items-center justify-center p-4 relative">
       {/* Overlay màu xanh nước biển mờ */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 to-cyan-800/70 backdrop-blur-sm"></div>
       
@@ -173,53 +169,27 @@ export default function RegisterPage() {
             <div className="space-y-5">
               <div>
                 <label
-                  htmlFor="firstName"
+                  htmlFor="fullName"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Tên
+                  Họ tên
                 </label>
                 <input
-                  id="firstName"
-                  name="firstName"
+                  id="fullName"
+                  name="fullName"
                   type="text"
-                  value={formData.firstName}
+                  value={formData.fullName}
                   onChange={handleChange}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
-                    errors.firstName
+                    errors.fullName
                       ? "border-red-300 focus:ring-red-200"
                       : "border-gray-300 focus:ring-blue-200"
                   }`}
                   placeholder="Nguyễn Văn A"
                   disabled={loading}
                 />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="lastName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Họ
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:outline-none ${
-                    errors.lastName
-                      ? "border-red-300 focus:ring-red-200"
-                      : "border-gray-300 focus:ring-blue-200"
-                  }`}
-                  placeholder="Nguyễn Văn A"
-                  disabled={loading}
-                />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                {errors.fullName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
                 )}
               </div>
 

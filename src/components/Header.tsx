@@ -3,17 +3,31 @@
 import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import { ChevronDown, PanelLeft } from "lucide-react";
-import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
+import { Dialog, DialogPanel, Transition, TransitionChild, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
+import Breadcrumb from "@/components/Breadcrumb";
+import { useAuthStore } from "@/lib/stores/useAuthStore";
 import { useSidebarStore } from "@/lib/stores/useSidebarStore";
 import { adminNavItems } from "@/lib/data/navItems";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuthStore();
   const { isOpen, isPinned, setOpen, setPinned } = useSidebarStore();
+
+  const handleLogout = () => {
+    try {
+      logout();
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  }
 
   return (
     <>
@@ -31,15 +45,27 @@ export default function Header() {
             </button>
           )}
 
-          <nav className="text-sm text-gray-600">
-            <ol className="flex space-x-2">
-              <li className="font-medium text-gray-900">Quan trắc nước</li>
-            </ol>
-          </nav>
+          <Breadcrumb />
         </div>
 
         <div className="flex items-center gap-3">
-
+          <Menu>
+            <MenuButton className="flex items-center p-1 rounded-full hover:bg-gray-100 transition-colors">
+              <Image src="/aquatech.png" alt="user" width={25} height={25} />
+            </MenuButton>
+            <MenuItems 
+              anchor="bottom end"
+              className="w-52 bg-white rounded-md border z-50">
+              <MenuItem>
+                <button 
+                  className="group flex w-full items-center gap-2 rounded-lg py-1.5 px-3 data-[focus]:bg-white/10"
+                  onClick={() => handleLogout()}
+                >
+                  Đăng xuất
+                </button>
+              </MenuItem>
+            </MenuItems>
+          </Menu>
         </div>
       </div>
 
@@ -88,13 +114,18 @@ export default function Header() {
                     <nav className="mt-6 flex flex-col gap-y-2">
                       {adminNavItems.map((item) => {
                         const Icon = item.icon;
+                        const isActive =
+                          item.path === "/"
+                            ? pathname === "/"
+                            : pathname.startsWith(item.path);
+
                         return (
                           <Link
                             key={item.id}
                             href={item.path}
                             className={clsx(
                               "flex items-center gap-x-2 px-3 py-2 rounded hover:bg-gray-100 transition-colors",
-                              pathname === item.path && "bg-gray-100 font-semibold"
+                              isActive && "bg-gray-100 font-semibold"
                             )}
                           >
                             <Icon size={18} />
@@ -113,3 +144,4 @@ export default function Header() {
     </>
   );
 }
+
