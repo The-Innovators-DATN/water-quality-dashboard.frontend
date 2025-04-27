@@ -1,7 +1,8 @@
-export const runtime = "edge";
-
 import type { Metadata } from "next";
 import "./globals.css";
+import 'react-calendar/dist/Calendar.css';
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 
 export const metadata: Metadata = {
   title: "Quan trắc chất lượng nước",

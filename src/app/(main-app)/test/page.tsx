@@ -1,58 +1,29 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import LineChart from "@/components/charts/LineChart"
-// import BoxPlot from "@/components/BoxPlot"
+import GridLayout from "react-grid-layout";
+import { WidthProvider } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 
-type Target = {
-    target_type: string
-    display_name: string
-    color: string
-    api: string
-}
+const ResponsiveGridLayout = WidthProvider(GridLayout);
 
-type Panel = {
-    id: number
-    title: string
-    type: string
-    gridPos: { x: number; y: number; w: number; h: number }
-    targets: Target[]
-}
+const layout = [
+  { i: "chart1", x: 0, y: 0, w: 6, h: 4 },
+  { i: "chart2", x: 6, y: 0, w: 6, h: 4 },
+  { i: "chart3", x: 0, y: 4, w: 6, h: 4 },
+];
 
-type DashboardConfig = {
-  panels: Panel[]
-}
-
-export default function DashboardPage() {
-    const [dashboard, setDashboard] = useState<DashboardConfig | null>(null)
-
-    useEffect(() => {
-        fetch("/dashboard.json")
-        .then(res => res.json())
-        .then(setDashboard)
-    }, [])  
-
-    if (!dashboard) return <p>Loading...</p>
-
-    return (
-        <div className="grid grid-cols-12 gap-4 p-4">
-        {dashboard.panels.map(panel => {
-            return (
-            <div
-                key={panel.id}
-                className={`col-span-${panel.gridPos.w} row-span-${panel.gridPos.h}`}
-            >
-                <h2 className="text-lg font-bold mb-2">{panel.title}</h2>
-                {panel.type === "line_chart" && (
-                    <LineChart targets={panel.targets} />
-                )}
-                {panel.type === "box_plot" && (
-                    <div className="text-sm italic text-gray-400">Chưa hỗ trợ box plot</div>
-                // <BoxPlot api={target.api} color={target.color} />
-                )}
-            </div>
-            )
-        })}
-        </div>
-    )
+export default function CustomDashboard() {
+  return (
+    <ResponsiveGridLayout
+      className="layout border-2 border-gray-300"
+      layout={layout}
+      cols={12}
+      rowHeight={100}
+    >
+      <div key="chart1" className="bg-white shadow rounded">Biểu đồ 1</div>
+      <div key="chart2" className="bg-white shadow rounded">Biểu đồ 2</div>
+      <div key="chart3" className="bg-white shadow rounded">Biểu đồ 3</div>
+    </ResponsiveGridLayout>
+  );
 }

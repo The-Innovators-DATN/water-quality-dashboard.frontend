@@ -1,4 +1,14 @@
+"use client";
+
+import { useEffect } from "react";
+import { useParametersStore } from "@/lib/stores/useParametersStore";
+
 export default function MainPage() {
+    const { fetchAllParameters } = useParametersStore();
+    useEffect(() => {
+        fetchAllParameters();
+    }, []);
+
     return (
         <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <h1 className="text-3xl font-bold text-gray-800">Main Page</h1>

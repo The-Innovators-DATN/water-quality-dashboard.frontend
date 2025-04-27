@@ -6,7 +6,7 @@ const publicPages = ["/login", "/register", "/forgot-password", "/reset-password
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const token = request.cookies.get("token")?.value;
+  const token = request.cookies.get("access_token")?.value;
 
   if (!publicPages.includes(pathname) && !token) {
     return NextResponse.redirect(new URL("/login", request.url));

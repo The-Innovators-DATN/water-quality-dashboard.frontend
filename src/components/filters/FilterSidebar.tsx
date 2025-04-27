@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-// import FilterSelect from "./FilterSelect";
-import FilterDatePicker from "./FilterDatePicker";
+import { FilterSelect } from "./FilterSelect";
+import { FilterDatePicker } from "./FilterDatePicker";
 
 const FilterSidebar = () => {
   const [filters, setFilters] = useState({
@@ -21,8 +21,8 @@ const FilterSidebar = () => {
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg p-4 space-y-4">
-      {/* <FilterSelect
+    <div className="w-56 bg-white shadow-lg p-3 space-y-3 text-sm truncate">
+      <FilterSelect
         label="Nhóm tham số"
         value={filters.parameterGroup}
         onChange={(value) => handleFilterChange("parameterGroup", value)}
@@ -31,7 +31,7 @@ const FilterSidebar = () => {
           { value: "group2", label: "Nhóm 2" },
         ]}
       />
-      
+
       <FilterSelect
         label="Tham số"
         value={filters.parameter}
@@ -80,7 +80,7 @@ const FilterSidebar = () => {
           { value: "auto", label: "Tự động" },
           { value: "manual", label: "Thủ công" },
         ]}
-      /> */}
+      />
 
       <FilterDatePicker
         label="Ngày bắt đầu"

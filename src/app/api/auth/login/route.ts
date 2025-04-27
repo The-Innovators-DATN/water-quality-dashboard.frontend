@@ -1,12 +1,10 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
-    const res = await fetch("http://103.172.79.28:8000/auth/login", {
+    const res = await fetch("http://103.172.79.28:8000/api/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -23,7 +21,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message: data.message,
-      token: data.data.token,
+      expires_at: data.data.expires_at,
+      access_token: data.data.access_token,
       refreshToken: data.data.refresh_token,
       status: data.status,
     });

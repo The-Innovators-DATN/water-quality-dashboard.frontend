@@ -77,22 +77,22 @@ export default function LoginPage() {
         throw new Error(data.message || "Đăng nhập thất bại.");
       }
   
-      const { token } = data;
-  
-      // ✅ Decode token để lấy user_id từ payload (nếu backend không trả về user_id riêng)
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const user_id = payload.sub; // thường là user UUID hoặc ID
-  
-      // Lưu token
-      localStorage.setItem("token", token);
-      localStorage.setItem("refresh_token", data.refreshToken);
-  
-      // Gọi Zustand store
+      const payload = JSON.parse(atob(data.access_token.split(".")[1]));
+      const user_id = payload.sub;
+
       const { useAuthStore } = await import("@/lib/stores/useAuthStore");
-      const { login } = useAuthStore.getState();
-      login(user_id, token);
+      const { login, setUser } = useAuthStore.getState();
   
-      // Điều hướng
+      login(user_id, data.access_token, data.expires_at);
+
+      const userRes = await fetch("/api/me", {
+        credentials: "include",
+      });
+      if (!userRes.ok) throw new Error("Không lấy được thông tin người dùng");
+      const user = await userRes.json();
+  
+      setUser(user.data);
+  
       const nextUrl = new URLSearchParams(window.location.search).get("from") || "/";
       router.push(nextUrl);
   
@@ -111,7 +111,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-cover bg-center flex items-center justify-center p-4 relative">
-      {/* Overlay màu xanh nước biển mờ */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 to-cyan-800/70 backdrop-blur-sm"></div>
       
       <div className="max-w-md w-full bg-white/90 backdrop-blur-md rounded-xl shadow-xl overflow-hidden z-10 border border-blue-100">
