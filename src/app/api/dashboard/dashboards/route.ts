@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ dashboard: body }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

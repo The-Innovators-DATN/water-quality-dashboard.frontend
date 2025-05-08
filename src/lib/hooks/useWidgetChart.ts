@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { parseTimeRange } from "@/lib/utils/timeHelpers";  // Import hàm parseTimeRange
+import { useEffect, useState, useMemo } from "react";
 import type { Dataset } from "@/lib/types/chartType";
 import { DashboardWidget } from "@/lib/types/dashboard";
 
@@ -7,16 +6,16 @@ export function useWidgetChart(widget: DashboardWidget) {
   const [data, setData] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const interval = widget.interval || 300;
+  const interval = widget.interval || 0;
 
-  // Lấy timeRange từ widget và xử lý nếu là quick time range như 'now-7d'
-  const { from, to } = widget.timeRange?.from ? parseTimeRange(widget.timeRange.from) : { from: new Date(), to: new Date() };
+  const { from, to } = widget.timeRange;
 
-  const isValidDate = (date: Date | null) => date && !isNaN(date.getTime());
+  console.log(from, to);
+  console.log(widget.targets);
 
   const fetchChartData = async () => {
-    if (!from || !to || !widget.targets.length || !isValidDate(from) || !isValidDate(to)) {
-      console.error("Invalid time range values");
+    if (!from || !to) {
+      console.error("Invalid time range values", { from, to, targets: widget.targets });
       return;
     }
 
@@ -25,8 +24,8 @@ export function useWidgetChart(widget: DashboardWidget) {
       const payload = {
         chart_type: widget.type,
         time_range: {
-          from: from.toISOString(),
-          to: to.toISOString(),
+          from: typeof from === "string"? from: from.toISOString(),
+          to: typeof to === "string"? to: to.toISOString(),
         },
         step_seconds: interval,
         forecast: widget.options?.forecast ?? { enabled: false },
@@ -79,26 +78,31 @@ export function useWidgetChart(widget: DashboardWidget) {
     }
   };
 
-  // Fetch ban đầu và khi widget thay đổi
   useEffect(() => {
     fetchChartData();
   }, [
-    widget.timeRange?.from,
-    widget.timeRange?.to,
-    widget.interval,
-    widget.targets,
+    from,
+    to,
+    interval,
     widget.type,
-    widget.refreshToken,
+    widget.targets,
   ]);
 
-  // Auto fetch mỗi `interval` giây
   useEffect(() => {
+    if (interval <= 0) return;
+
     const auto = setInterval(() => {
       fetchChartData();
     }, interval * 1000);
 
     return () => clearInterval(auto);
-  }, [interval, widget.targets, widget.timeRange?.from, widget.timeRange?.to]);
+  }, [
+    from,
+    to,
+    interval,
+    widget.type,
+    widget.targets,
+  ]);
 
   return { data, loading };
 }

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No access token found" }, { status: 401 });
     }
 
-    const res = await fetch("http://160.191.49.128:8000/api/dashboard/parameters", {
+    const res = await fetch("http://103.172.79.28:8000/api/dashboard/parameters", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

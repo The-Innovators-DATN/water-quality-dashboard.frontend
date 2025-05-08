@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
@@ -89,6 +90,11 @@ export default function DetailPageTemplate({
   };
 
   const handleCompareClick = () => {
+    if (selectedParams.length === 0) {
+      toast.error("Bạn cần chọn ít nhất một thông số để so sánh.");
+      return;
+    }
+
     const widget = generateComparisonWidget({
       stationId,
       selectedParams,
@@ -96,7 +102,9 @@ export default function DetailPageTemplate({
       timeRange,
       interval: selectedInterval,
     });
-  
+
+    console.log("Widget data:", widget);
+
     localStorage.setItem("compare:widget", JSON.stringify(widget));
     router.push("/dashboard/new");
   };
@@ -183,12 +191,13 @@ export default function DetailPageTemplate({
                   <>
                     <ChartToolbar
                       interval={selectedInterval}
+                      timeRange={timeRange}
                       onIntervalChange={(val) => {
                         setSelectedInterval(val);
                         refresh();
                       }}
                       onTimeRangeChange={(from, to) => {
-                        setTimeRange([from, to]);
+                        setTimeRange({ from, to });
                         refresh();
                       }}
                       onManualRefresh={refresh}
@@ -219,10 +228,10 @@ export default function DetailPageTemplate({
               <div className="flex-1 p-4 overflow-y-auto text-sm text-gray-600">
                 {isLoading ? (
                   <p className="text-gray-500 italic">Đang tải dữ liệu...</p>
-                ) : datasets.length > 0 ? (
+                ) : datasets.length > 0 && selectedParams.length > 0 ? (
                   <LineChart datasets={datasets} />
                 ) : (
-                  <p className="text-gray-500 italic">Chưa có dữ liệu.</p>
+                  <p className="text-gray-500 italic">Chưa có chỉ số nào được chọn.</p>
                 )}
               </div>
             </div>

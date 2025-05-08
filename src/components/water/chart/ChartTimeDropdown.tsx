@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { calculatePopupPosition, PopupPosition } from "@/lib/utils/popupPosition";
 
 interface Props {
+  value: { from: Date | string, to: Date | string };
   onApply: (from: Date, to: Date) => void;
 }
 
@@ -33,7 +34,7 @@ function parseRelativeTimeString(relativeStr: string): Date {
   return now;
 }
 
-export default function ChartTimeDropdown({ onApply }: Props) {
+export default function ChartTimeDropdown({ value, onApply }: Props) {
   const fromCalendarRef = useRef<HTMLDivElement>(null);
   const toCalendarRef = useRef<HTMLDivElement>(null);
 
@@ -47,12 +48,16 @@ export default function ChartTimeDropdown({ onApply }: Props) {
   const [fromCalendarPos, setFromCalendarPos] = useState<PopupPosition | null>(null);
   const [toCalendarPos, setToCalendarPos] = useState<PopupPosition | null>(null);
 
-  const [range, setRange] = useState<[Date | string, Date | string]>(() => {
-    const now = new Date();
+  const [range, setRange] = useState<{ from: Date | string, to: Date | string }>(() => {
+    const to = new Date();
     const from = new Date();
     from.setHours(from.getHours() - 24);
-    return [from, now];
+    return {from, to};
   });
+
+  useEffect(() => {
+    setRange(value);
+  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -67,9 +72,9 @@ export default function ChartTimeDropdown({ onApply }: Props) {
   }, []);
 
   const applyCustomRange = () => {
-    if (range[0] && range[1]) {
-      const fromDate = typeof range[0] === "string" ? parseRelativeTimeString(range[0]) : range[0];
-      const toDate = typeof range[1] === "string" ? parseRelativeTimeString(range[1]) : range[1];
+    if (range.from && range.to) {
+      const fromDate = typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from;
+      const toDate = typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to;
       onApply(fromDate, toDate);
       setDropdownOpen(false);
       setShowFromCalendar(false);
@@ -143,7 +148,7 @@ export default function ChartTimeDropdown({ onApply }: Props) {
               onClick={() => openCalendar("from")}
               className="w-full text-left px-3 py-2 rounded bg-gray-50 hover:bg-gray-100 border"
             >
-              <p>{typeof range[0] === "string" ? range[0] : format(range[0], "dd/MM/yyyy HH:mm:ss")}</p>
+              <p>{format(range.from, "dd/MM/yyyy HH:mm:ss")}</p>
             </button>
 
             <p>Đến:</p>
@@ -152,7 +157,7 @@ export default function ChartTimeDropdown({ onApply }: Props) {
               onClick={() => openCalendar("to")}
               className="w-full text-left px-3 py-2 rounded bg-gray-50 hover:bg-gray-100 border"
             >
-              <p>{typeof range[1] === "string" ? range[1] : format(range[1], "dd/MM/yyyy HH:mm:ss")}</p>
+              <p>{format(range.to, "dd/MM/yyyy HH:mm:ss")}</p>
             </button>
 
             <button
@@ -172,7 +177,7 @@ export default function ChartTimeDropdown({ onApply }: Props) {
                 className="w-full text-left px-3 py-2 rounded hover:bg-gray-100"
                 onClick={() => {
                   onApply(parseRelativeTimeString(r.from), parseRelativeTimeString(r.to));
-                  setRange([r.from, r.to]);
+                  setRange({ from: parseRelativeTimeString(r.from), to: parseRelativeTimeString(r.to)});
                   setDropdownOpen(false);
                 }}
               >
@@ -193,12 +198,12 @@ export default function ChartTimeDropdown({ onApply }: Props) {
           <Calendar
             onChange={(date) => {
               if (date instanceof Date) {
-                setRange(([_, to]) => [date, to]);
+                setRange({ from: date, to: range.to});
                 setShowFromCalendar(false);
               }
             }}
-            maxDate={typeof range[1] === "string" ? parseRelativeTimeString(range[1]) : range[1]}
-            value={typeof range[0] === "string" ? parseRelativeTimeString(range[0]) : range[0]}
+            maxDate={typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to}
+            value={typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from}
           />
         </div>
       )}
@@ -215,13 +220,13 @@ export default function ChartTimeDropdown({ onApply }: Props) {
               if (date instanceof Date) {
                 const endOfDay = new Date(date);
                 endOfDay.setHours(23, 59, 59, 999);
-                setRange(([from]) => [from, endOfDay]);
+                setRange({ from: range.from, to: endOfDay});
                 setShowToCalendar(false);
               }
             }}
-            minDate={typeof range[0] === "string" ? parseRelativeTimeString(range[0]) : range[0]}
+            minDate={typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from}
             maxDate={new Date()}
-            value={typeof range[1] === "string" ? parseRelativeTimeString(range[1]) : range[1]}
+            value={typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to}
           />
         </div>
       )}

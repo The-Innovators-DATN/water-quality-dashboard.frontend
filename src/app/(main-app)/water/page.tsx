@@ -12,7 +12,6 @@ import StationTable from "@/components/tables/StationTable";
 
 const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
   ssr: false,
-  loading: () => <p>Loading map...</p>,
 });
 
 const layerOptions = [
@@ -105,7 +104,10 @@ export default function DashboardPage() {
 
         <div className="relative w-full flex-1 rounded-xl overflow-hidden shadow-md bg-white">
           {isLoading ? (
-            <p className="p-4">Đang tải dữ liệu...</p>
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-blue-500 text-sm font-medium">Đang tải dữ liệu...</p>
+            </div>
           ) : viewMode === "map" ? (
             <LeafletMap geojsonData={geojsonData} onFeatureClick={handleFeatureClick} />
           ) : (

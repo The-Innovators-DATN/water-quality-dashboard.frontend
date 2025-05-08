@@ -7,6 +7,7 @@ import {
   useCallback,
   Fragment,
 } from "react";
+import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { WidthProvider } from "react-grid-layout";
@@ -58,6 +59,7 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
   const [stations, setStations] = useState<{ id: number; name: string }[]>([]);
   const [filteredStations, setFilteredStations] = useState<{ id: number; name: string }[]>([]);
   const [availableParameters, setAvailableParameters] = useState<{ id: number; name: string }[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isEditMode && dashboardUid) {
@@ -65,7 +67,31 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
     }
   }, [isEditMode, dashboardUid]);
 
-  console.log("title", title);
+  useEffect(() => {
+    const widgetStr = localStorage.getItem("compare:widget");
+    if (widgetStr) {
+      try {
+        const widget = JSON.parse(widgetStr);
+        if (widget) {
+          reset();
+
+          addWidget({
+            ...widget,
+            id: `widget-${Date.now()}`,
+            gridPos: getNextGridPosition([]),
+            timeRange: widget.timeRange,
+            interval: widget.interval,
+            targets: widget.targets,
+          });
+          setTimeRange(widget.timeRange);
+          setInterval(widget.interval);
+        }
+        localStorage.removeItem("compare:widget");
+      } catch (err) {
+        console.error("Lỗi parse widget từ localStorage:", err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/dashboard/stations")
@@ -80,27 +106,26 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
 
   const handleSaveDashboard = async () => {
     try {
-      const result = await saveDashboard({
+      setIsSaving(true);
+      await saveDashboard({
         uid: isEditMode ? dashboardUid : undefined,
         title,
         interval,
-        timeRange: {
-          from: new Date(timeRange.from),
-          to: new Date(timeRange.to),
-        },
+        timeRange,
         created_by: userId!,
       });
-
-      alert("Đã lưu dashboard!");
 
       if (!dashboardUid) {
         useDashboardStore.getState().reset();
         router.push("/dashboard");
       }
 
+      toast.success("Đã lưu dashboard thành công!");
     } catch (err) {
       console.error("Lỗi khi lưu dashboard:", err);
-      alert("Lỗi khi lưu dashboard");
+      toast.error("Lỗi khi lưu dashboard");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -124,10 +149,7 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
       gridPos: getNextGridPosition(widgets),
       targets: [],
       options: { forecast: { enabled: true, time_step: 3600 } },
-      timeRange: {
-        from: timeRange.from,
-        to: timeRange.to,
-      },
+      timeRange,
       interval,
     };
     setEditingWidget(newWidget);
@@ -151,6 +173,7 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
         <div className="flex gap-2 items-center">
           <ChartToolbar
             interval={interval}
+            timeRange={timeRange}
             onIntervalChange={(val) => {
               setInterval(val);
               setWidgets((prev) =>
@@ -166,14 +189,13 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
               );
             }}
             onTimeRangeChange={(from, to) => {
-              setTimeRange({ from: from.toISOString(), to: to.toISOString() });
+              const fromDate = new Date(from);
+              const toDate = new Date(to);
+              setTimeRange({ from: fromDate, to: toDate });
               setWidgets((prev) =>
                 prev.map((w) => ({
                   ...w,
-                  timeRange: {
-                    from: from.toISOString(),
-                    to: to.toISOString(),
-                  },
+                  timeRange: { from: fromDate, to: toDate },
                 }))
               );
             }}
@@ -211,7 +233,7 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
         {widgets.map((w) => (
           <div key={w.id} data-grid={w.gridPos} className="w-full h-full border rounded bg-white shadow p-4 relative">
             <h2 className="font-semibold text-sm mb-2 truncate">{w.title}</h2>
-            <ChartRenderer widget={w} />
+            <ChartRenderer key={w.refreshToken ?? w.id} widget={w} />
             {isEditing && (
               <>
                 <button
@@ -276,6 +298,11 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
             </div>
           </Dialog>
         </Transition>
+      )}
+      {isSaving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
       )}
     </div>
   );

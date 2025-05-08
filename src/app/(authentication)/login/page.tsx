@@ -92,6 +92,12 @@ export default function LoginPage() {
       const user = await userRes.json();
   
       setUser(user.data);
+
+      const { useStationStore } = await import("@/lib/stores/useStationStore");
+      useStationStore.getState().fetchStations();
+
+      const { useParametersStore } = await import("@/lib/stores/useParametersStore");
+      useParametersStore.getState().fetchAllParameters();
   
       const nextUrl = new URLSearchParams(window.location.search).get("from") || "/";
       router.push(nextUrl);

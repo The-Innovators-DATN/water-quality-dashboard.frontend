@@ -8,11 +8,11 @@ interface DashboardState {
   title: string;
   interval: number;
   version: number;
-  timeRange: { from: string; to: string };
+  timeRange: { from: Date | string, to: Date | string };
   setWidgets: (widgets: DashboardWidget[] | ((prev: DashboardWidget[]) => DashboardWidget[])) => void;
   setTitle: (title: string) => void;
   setInterval: (interval: number) => void;
-  setTimeRange: (range: { from: string; to: string }) => void;
+  setTimeRange: (range: { from: Date | string, to: Date | string }) => void;
   addWidget: (widget: DashboardWidget) => void;
   updateWidget: (updated: DashboardWidget) => void;
   removeWidget: (id: string) => void;
@@ -21,7 +21,7 @@ interface DashboardState {
     uid?: string;
     title: string;
     interval: number;
-    timeRange: { from: Date; to: Date };
+    timeRange: { from: Date | string, to: Date | string };
     created_by?: number;
   }) => Promise<void>;
   loadDashboard: (uid: string) => Promise<void>;
@@ -34,7 +34,7 @@ export const useDashboardStore = create<DashboardState>()(
       title: "Bảng điều khiển mới",
       interval: 0,
       version: 1,
-      timeRange: { from: new Date().toISOString(), to: new Date().toISOString() },
+      timeRange: { from: new Date(), to: new Date() },
 
       setWidgets: (widgetsOrFn) => {
         const current = get().widgets;
@@ -52,12 +52,13 @@ export const useDashboardStore = create<DashboardState>()(
       addWidget: (widget) =>
         set((state) => ({ widgets: [...state.widgets, widget] })),
 
-      updateWidget: (updated) =>
+      updateWidget: (updated) => {
         set((state) => ({
           widgets: state.widgets.map((w) =>
             w.id === updated.id ? updated : w
           ),
-        })),
+        }))
+      },
 
       removeWidget: (id) =>
         set((state) => ({
@@ -70,29 +71,24 @@ export const useDashboardStore = create<DashboardState>()(
           widgets: [],
           title: "",
           interval: 0,
-          timeRange: { from: new Date().toISOString(), to: new Date().toISOString() },
+          timeRange: { from: new Date(), to: new Date() },
           version: 1,
         })
       },
 
-      saveDashboard: async ({ uid, title, interval, timeRange, created_by }) => {
+      saveDashboard: async ({ uid, title, interval, timeRange }) => {
         const widgets = get().widgets;
         const currentVersion = get().version;
       
         const userId = useAuthStore.getState().getUserId?.();
         if (!userId) throw new Error("Không tìm thấy userId từ Auth Store");
       
-        const from = typeof timeRange.from === "string"
-          ? timeRange.from
-          : timeRange.from?.toISOString();
-        const to = typeof timeRange.to === "string"
-          ? timeRange.to
-          : timeRange.to?.toISOString();
+        const from = typeof timeRange.from === "string"? timeRange.from: timeRange.from.toISOString();
+        const to = typeof timeRange.to === "string"? timeRange.to: timeRange.to.toISOString();
       
         const nextVersion = uid ? currentVersion + 1 : 1;
       
-        const payload = {
-          ...(uid ? { uid } : {}),
+        const createPayload = {
           dashboard: {
             name: title || "Bảng điều khiển mới",
             description: "Mô tả bảng điều khiển",
@@ -108,19 +104,38 @@ export const useDashboardStore = create<DashboardState>()(
                 options: w.options,
               })),
             },
-            created_by: created_by ?? userId,
-            version: nextVersion,
+            status: "active",
+            created_by: userId,
+          }
+        };
+
+        const updatePayload = {
+          dashboard: {
+            name: title || "Bảng điều khiển mới",
+            description: "Mô tả bảng điều khiển",
+            layout_configuration: {
+              time: { from, to },
+              refresh: `${interval}s`,
+              panels: widgets.map((w, idx) => ({
+                id: typeof w.id === "number" ? w.id : idx + 1,
+                title: w.title,
+                type: w.type,
+                gridPos: w.gridPos,
+                targets: w.targets,
+                options: w.options,
+              })),
+            },
             status: "active",
           },
+          created_by: userId,
         };
-      
         const res = await fetch(
           uid ? `/api/dashboard/dashboards/${uid}` : "/api/dashboard/dashboards",
           {
             method: uid ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify(payload),
+            body: JSON.stringify(uid ? updatePayload : createPayload),
           }
         );
       
@@ -131,7 +146,7 @@ export const useDashboardStore = create<DashboardState>()(
       
         set({ version: nextVersion });
 
-        useDashboardStore.getState().reset();
+        uid ? useDashboardStore.getState().loadDashboard(uid): useDashboardStore.getState().reset();
       },  
 
       loadDashboard: async (uid: string) => {
@@ -146,8 +161,9 @@ export const useDashboardStore = create<DashboardState>()(
         }
 
         const dashboard = result.data;
+
         const layout = dashboard.layoutConfiguration;
-        const refresh = parseInt(layout.refresh?.replace("s", "") || "300");
+        const refresh = parseInt(layout.refresh.replace("s", "") ?? "0");
 
         useDashboardStore.getState().reset();
 
@@ -155,10 +171,7 @@ export const useDashboardStore = create<DashboardState>()(
           title: dashboard.name,
           interval: refresh,
           version: dashboard.version ?? 1,
-          timeRange: {
-            from: layout.time?.from ?? "",
-            to: layout.time?.to ?? "",
-          },
+          timeRange: layout.time,
           widgets: layout.panels.map((panel: any, idx: number) => ({
             id: `widget-${idx}`,
             title: panel.title,
@@ -167,10 +180,7 @@ export const useDashboardStore = create<DashboardState>()(
             targets: panel.targets,
             options: panel.options,
             interval: refresh,
-            timeRange: {
-              from: layout.time?.from ?? "",
-              to: layout.time?.to ?? "",
-            },
+            timeRange: layout.time,
           })),
         });
       },

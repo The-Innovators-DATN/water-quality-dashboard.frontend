@@ -31,16 +31,13 @@ export default function StationSidebar({
   }
 
   const allGroups = Object.entries(groupedWithFallback);
-  // Sắp xếp để "Chưa phân loại" luôn ở cuối
   allGroups.sort(([a], [b]) => {
-    if (a === "Chưa phân loại") return 1;
-    if (b === "Chưa phân loại") return -1;
+    if (a === "Chưa phân loại" || a === "Khác") return 1;
+    if (b === "Chưa phân loại" || b === "Khác") return -1;
     return a.localeCompare(b);
   });
 
   const groupCount = allGroups.length;
-
-  console.log("Grouped Parameters:", groupedParameters);
 
   return (
     <div className="w-52 h-full overflow-y-auto border-r px-2 py-1">

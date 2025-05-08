@@ -5,13 +5,15 @@ import ChartTimeDropdown from "@/components/water/chart/ChartTimeDropdown";
 
 interface ChartToolbarProps {
   interval: number;
+  timeRange: { from: Date | string, to: Date | string };
   onIntervalChange: (val: number) => void;
   onManualRefresh: () => void;
-  onTimeRangeChange: (from: Date, to: Date) => void;
+  onTimeRangeChange: (from: Date | string, to: Date | string) => void;
 }
 
 export default function ChartToolbar({
   interval,
+  timeRange,
   onIntervalChange,
   onManualRefresh,
   onTimeRangeChange,
@@ -19,6 +21,7 @@ export default function ChartToolbar({
   return (
     <div className="flex items-center justify-end gap-2 px-2 py-1 text-sm">
       <ChartTimeDropdown
+        value={timeRange}
         onApply={(from, to) => onTimeRangeChange(from, to)}
       />
 

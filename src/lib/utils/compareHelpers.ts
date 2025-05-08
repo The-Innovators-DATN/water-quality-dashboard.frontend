@@ -16,9 +16,9 @@ export function generateComparisonWidget({
   stationId: number;
   selectedParams: string[];
   allParameters: { id: number; name: string }[];
-  timeRange: [Date, Date];
+  timeRange: { from: Date | string, to: Date | string };
   interval: number;
-}): DashboardWidget & { meta: any } {
+}): DashboardWidget {
     const targets = selectedParams
         .map((name, index) => {
         const param = allParameters.find((p) => p.name === name);
@@ -43,17 +43,11 @@ export function generateComparisonWidget({
     options: {
       forecast: { enabled: true, time_step: 3600 },
     },
-    timeRange: {
-      from: timeRange[0].toISOString(),
-      to: timeRange[1].toISOString(),
-    },
+    timeRange: { from: timeRange.from, to: timeRange.to },
     interval,
-    meta: {
-      timeRange: {
-        from: timeRange[0].toISOString(),
-        to: timeRange[1].toISOString(),
-      },
-      interval,
-    },
+    // meta: {
+    //   timeRange,
+    //   interval,
+    // },
   };
 }

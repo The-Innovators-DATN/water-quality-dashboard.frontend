@@ -20,6 +20,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
+  if (pathname === "/alert/rules") {
+    return NextResponse.redirect(new URL("/alert", request.url));
+  }
+
   return NextResponse.next();
 }
 

@@ -17,10 +17,7 @@ export interface DashboardWidget {
       color: string;
     }[];
     options?: any;
-    timeRange: {
-      from: string;
-      to: string;
-    };
+    timeRange: { from: Date | string, to: Date | string };
     interval: number;
     refreshToken?: number;
 }

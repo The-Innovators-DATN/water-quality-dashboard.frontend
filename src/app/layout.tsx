@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Toaster } from 'sonner';
 import "./globals.css";
 import 'react-calendar/dist/Calendar.css';
 import "react-grid-layout/css/styles.css";
@@ -17,6 +18,7 @@ export default function RootLayout({
       <head></head>
       <body>
           {children}
+          <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );

@@ -15,7 +15,6 @@ export const adminNavItems = [
     { id: "customize-dashboard", title: "Bảng điều khiển", icon: Gauge, path: "/dashboard" },
     { id: "data", title: "Dữ liệu", icon: Database, path: "/data" },
     { id: "alerts", title: "Cảnh báo", icon: Bell, path: "/alert" },
-    { id: "alert-rules", title: "Quy tắc cảnh báo", icon: Bell, path: "/alert/rules" },
     { id: "reports", title: "Báo cáo", icon: BarChart, path: "/report" },
     { id: "accounts", title: "Tài khoản", icon: Users, path: "/account" },
 ];

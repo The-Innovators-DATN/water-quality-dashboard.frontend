@@ -16,6 +16,19 @@ export default function LineChart({ datasets }: LineChartProps) {
   useEffect(() => {
     if (!datasets || datasets.length === 0) return;
 
+    datasets.forEach(ds => {
+      ds.actual.forEach(p => {
+        if (!(p.timestamp instanceof Date)) {
+          p.timestamp = new Date(p.timestamp);
+        }
+      });
+      ds.forecast.forEach(p => {
+        if (!(p.timestamp instanceof Date)) {
+          p.timestamp = new Date(p.timestamp);
+        }
+      });
+    });
+
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
 
@@ -39,8 +52,20 @@ export default function LineChart({ datasets }: LineChartProps) {
     g.append("g")
       .attr("transform", `translate(0,${height})`)
       .call(
-        d3.axisBottom(x).tickFormat((d, i) => d3.timeFormat("%d/%m/%Y")(d as Date))
-      );
+        d3.axisBottom(x)
+          .ticks(5)
+          .tickFormat((date: Date) => {
+            const [start, end] = d3.extent(flat, (d) => d.timestamp) as [Date, Date];
+            const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (diffDays <= 7) return d3.timeFormat("%d/%m %H:%M")(date);
+            if (diffDays <= 183) return d3.timeFormat("%d/%m/%y")(date);
+            return d3.timeFormat("%m/%Y")(date);
+          })
+          .tickSizeOuter(0)
+      )
+      .selectAll("text")
+      .attr("text-anchor", "middle")
 
     let tooltipDiv = containerRef.current
       ? d3.select(containerRef.current).select<HTMLDivElement>(".tooltip-html")
@@ -62,41 +87,38 @@ export default function LineChart({ datasets }: LineChartProps) {
         .style("display", "none");
     }
 
-    datasets.forEach((ds) => {
-      const combined = [...ds.actual, ...ds.forecast];
-      const pathArea = g.append("g");
+    datasets.forEach((ds, i) => {
+      const lineGenerator = d3.line<ChartPoint>()
+        .x((d) => x(d.timestamp))
+        .y((d) => y(d.value));
 
-      pathArea.append("path")
+      // Vẽ actual
+      g.append("path")
         .datum(ds.actual)
         .attr("fill", "none")
         .attr("stroke", ds.color)
         .attr("stroke-width", 2)
-        .attr("d", d3.line<ChartPoint>().x((d) => x(d.timestamp)).y((d) => y(d.value)));
+        .attr("d", lineGenerator);
 
+      // Vẽ forecast với nét đứt
       if (ds.forecast.length > 0) {
-        pathArea.append("path")
+        g.append("path")
           .datum(ds.forecast)
           .attr("fill", "none")
           .attr("stroke", ds.color)
           .attr("stroke-width", 2)
-          .attr("stroke-dasharray", "4 2")
-          .attr("d", d3.line<ChartPoint>().x((d) => x(d.timestamp)).y((d) => y(d.value)));
+          .attr("stroke-dasharray", "6 4")
+          .attr("d", lineGenerator);
       }
 
-      const highlightCircle = g
-        .append("circle")
-        .attr("r", 5)
-        .attr("fill", ds.color)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 1.5)
-        .style("display", "none");
-
-      pathArea.append("path")
+      // Tooltip area (transparent path)
+      const combined = [...ds.actual, ...ds.forecast];
+      g.append("path")
         .datum(combined)
         .attr("fill", "none")
         .attr("stroke", "transparent")
         .attr("stroke-width", 15)
-        .attr("d", d3.line<ChartPoint>().x((d) => x(d.timestamp)).y((d) => y(d.value)))
+        .attr("d", lineGenerator)
         .on("mousemove", function (event) {
           const [mx] = d3.pointer(event);
           const mxTime = x.invert(mx);
@@ -143,6 +165,38 @@ export default function LineChart({ datasets }: LineChartProps) {
           tooltipDiv?.style("display", "none");
           highlightCircle.style("display", "none");
         });
+
+      const highlightCircle = g
+        .append("circle")
+        .attr("r", 5)
+        .attr("fill", ds.color)
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1.5)
+        .style("display", "none");
+
+      // Draw red lines for anomalies (from previous point to anomaly, and from anomaly to next point if available)
+      for (let j = 0; j < combined.length; j++) {
+        if (combined[j].anomaly) {
+          if (j > 0) {
+            g.append("line")
+              .attr("x1", x(combined[j - 1].timestamp))
+              .attr("y1", y(combined[j - 1].value))
+              .attr("x2", x(combined[j].timestamp))
+              .attr("y2", y(combined[j].value))
+              .attr("stroke", "red")
+              .attr("stroke-width", 2);
+          }
+          if (j < combined.length - 1) {
+            g.append("line")
+              .attr("x1", x(combined[j].timestamp))
+              .attr("y1", y(combined[j].value))
+              .attr("x2", x(combined[j + 1].timestamp))
+              .attr("y2", y(combined[j + 1].value))
+              .attr("stroke", "red")
+              .attr("stroke-width", 2);
+          }
+        }
+      }
     });
 
     const legend = svg.append("g").attr("transform", `translate(${margin.left}, ${chartHeight + 20})`);
@@ -154,11 +208,30 @@ export default function LineChart({ datasets }: LineChartProps) {
     });
   }, [datasets, size]);
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          const { width, height } = entry.contentRect;
+          setSize({
+            width: width,
+            height: height,
+          });
+        }
+      }
+    });
+
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full"
-      style={{ height: `${size.height}px` }}
+      className="relative w-full h-full"
     >
       <svg
         ref={ref}

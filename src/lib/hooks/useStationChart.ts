@@ -9,10 +9,10 @@ export function useStationChart(stationId: number, parameters: any[]) {
   const [selectedParams, setSelectedParams] = useState<string[]>([]);
   const [selectedInterval, setSelectedInterval] = useState(0);
   const [selectedRange, setSelectedRange] = useState("now-24h");
-  const [timeRange, setTimeRange] = useState<[Date, Date]>([
-    subHours(new Date(), 2),
-    new Date(),
-  ]);
+  const [timeRange, setTimeRange] = useState<{ from: Date | string, to: Date | string }>({
+    from: subHours(new Date(), 24),
+    to: new Date(),
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [triggerFetch, setTriggerFetch] = useState(false);
 
@@ -43,8 +43,8 @@ export function useStationChart(stationId: number, parameters: any[]) {
       const payload = {
         chart_type: "line_chart",
         time_range: {
-          from: timeRange[0].toISOString(),
-          to: timeRange[1].toISOString(),
+          from: typeof timeRange.from === "string"? timeRange.from: timeRange.from.toISOString(),
+          to: typeof timeRange.to === "string"? timeRange.to: timeRange.to.toISOString(),
         },
         step_seconds: selectedInterval,
         forecast: {
@@ -122,7 +122,7 @@ export function useStationChart(stationId: number, parameters: any[]) {
 
   useEffect(() => {
     const { from, to } = parseTimeRange(selectedRange);
-    setTimeRange([from, to]);
+    setTimeRange({ from, to });
   }, [selectedRange]);
 
   return {
