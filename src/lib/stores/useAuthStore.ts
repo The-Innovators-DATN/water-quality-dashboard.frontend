@@ -2,55 +2,47 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface User {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
   email: string;
   role: string;
 }
 
-export interface AuthState {
+interface AuthState {
   user_id: number | null;
   token: string | null;
-  isAuthenticated: boolean;
-  login: (usser_id: number, token: string) => void;
+  user: User | null;
+
+  login: (user_id: number, token: string, expires_at: string, user?: User) => void;
   logout: () => void;
-  // updateUser: (userData: Partial<User>) => void;
+  setUser: (user: User) => void;
+
+  getUser: () => User | null;
+  getUserId: () => number | null;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user_id: null,
       token: null,
-      isAuthenticated: false,
+      user: null,
 
-      login: (user_id: number, token: string) => {
-        document.cookie = `token=${token}; path=/; max-age=86400; samesite=strict`;
-        set({
-          user_id: user_id,
-          token,
-          isAuthenticated: true,
-        });
+      login: (user_id, token, expires_at, user) => {
+        document.cookie = `access_token=${token}; path=/; max-age=${expires_at}; samesite=strict`;
+        set({ user_id, token, user: user ?? null });
       },
 
       logout: () => {
-        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-        set({
-          user_id: null,
-          token: null,
-          isAuthenticated: false,
-        });
+        document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+        set({ user_id: null, token: null, user: null });
       },
 
-      // updateUser: (userData: Partial<User>) => {
-      //   const currentUser = get().user;
-      //   if (currentUser) {
-      //     set({
-      //       user: { ...currentUser, ...userData },
-      //     });
-      //   }
-      // },
+      setUser: (user) => set({ user }),
+
+      getUser: () => get().user,
+      getUserId: () => get().user?.id ?? get().user_id,
     }),
     {
       name: "water-monitoring-auth",

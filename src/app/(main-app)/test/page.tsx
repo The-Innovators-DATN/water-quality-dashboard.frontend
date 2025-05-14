@@ -1,58 +1,57 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import LineChart from "@/components/charts/LineChart"
-// import BoxPlot from "@/components/BoxPlot"
+import { useEffect, useRef } from "react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
-type Target = {
-    target_type: string
-    display_name: string
-    color: string
-    api: string
-}
+const ReportButton = () => {
+  const contentRef = useRef(null);
 
-type Panel = {
-    id: number
-    title: string
-    type: string
-    gridPos: { x: number; y: number; w: number; h: number }
-    targets: Target[]
-}
+  const generatePDF = () => {
+    const element = contentRef.current;
+    
+    // Chụp toàn bộ trang web, bao gồm cả phần cuộn
+    html2canvas(element, {
+      scrollX: 0,
+      scrollY: -window.scrollY,  // Đảm bảo phần cuộn cũng được chụp
+      height: document.documentElement.scrollHeight, // Lấy chiều cao của toàn bộ trang
+      width: document.documentElement.scrollWidth,  // Lấy chiều rộng của toàn bộ trang
+      windowWidth: document.documentElement.scrollWidth, // Lấy chiều rộng của cửa sổ
+      windowHeight: document.documentElement.scrollHeight, // Lấy chiều cao của cửa sổ
+      scale: 2,  // Điều chỉnh độ phân giải
+    }).then((canvas) => {
+      const doc = new jsPDF("p", "mm", "a4");
 
-type DashboardConfig = {
-  panels: Panel[]
-}
+      // Chuyển canvas thành ảnh
+      const imgData = canvas.toDataURL("image/png");
 
-export default function DashboardPage() {
-    const [dashboard, setDashboard] = useState<DashboardConfig | null>(null)
+      // Lấy kích thước của ảnh
+      const imgWidth = doc.internal.pageSize.width;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    useEffect(() => {
-        fetch("/dashboard.json")
-        .then(res => res.json())
-        .then(setDashboard)
-    }, [])  
+      // Thêm ảnh vào PDF
+      doc.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
 
-    if (!dashboard) return <p>Loading...</p>
+      // Lưu file PDF
+      doc.save("schedule_report.pdf");
+    });
+  };
 
-    return (
-        <div className="grid grid-cols-12 gap-4 p-4">
-        {dashboard.panels.map(panel => {
-            return (
-            <div
-                key={panel.id}
-                className={`col-span-${panel.gridPos.w} row-span-${panel.gridPos.h}`}
-            >
-                <h2 className="text-lg font-bold mb-2">{panel.title}</h2>
-                {panel.type === "line_chart" && (
-                    <LineChart targets={panel.targets} />
-                )}
-                {panel.type === "box_plot" && (
-                    <div className="text-sm italic text-gray-400">Chưa hỗ trợ box plot</div>
-                // <BoxPlot api={target.api} color={target.color} />
-                )}
-            </div>
-            )
-        })}
+  return (
+    <div>
+      <div ref={contentRef}>
+        {/* Nội dung của bạn sẽ được xuất ra PDF */}
+        <h1>Báo Cáo Lịch Trình - Chất Lượng Nước</h1>
+        <div>
+          {/* Nội dung trang: văn bản, biểu đồ, bảng,... */}
+          <p>Dữ liệu về pH và chất lượng nước sẽ được xuất dưới dạng bảng hoặc biểu đồ.</p>
         </div>
-    )
-}
+        {/* Các phần tử khác của trang web */}
+      </div>
+
+      <button onClick={generatePDF}>Tải Báo Cáo PDF</button>
+    </div>
+  );
+};
+
+export default ReportButton;

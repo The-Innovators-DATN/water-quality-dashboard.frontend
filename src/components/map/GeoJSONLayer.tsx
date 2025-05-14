@@ -3,6 +3,8 @@
 import { GeoJSON } from "react-leaflet";
 import { Layer } from "leaflet";
 import { GeoJsonData } from "@/lib/types/geojsonDataType";
+import { DefaultIcon } from "@/lib/leaflet/customMarker";
+import L from "leaflet";
 
 export interface FeatureProperties {
   name?: string;
@@ -10,6 +12,8 @@ export interface FeatureProperties {
   region?: string;
   size?: number;
   country?: string;
+  id?: string;
+  status?: string;
 }
 
 interface Feature {
@@ -37,9 +41,21 @@ const GeoJSONLayer = ({
     });
   };
 
+  const pointToLayer = (feature: any, latlng: L.LatLng) => {
+    return L.marker(latlng, { icon: DefaultIcon });
+  };
+
   return (
     <>
-      {geojsonData && <GeoJSON key={JSON.stringify(geojsonData)} data={geojsonData} style={geoJSONStyle} onEachFeature={onEachFeature} />}
+      {geojsonData && (
+        <GeoJSON
+          key={JSON.stringify(geojsonData)}
+          data={geojsonData}
+          style={geoJSONStyle}
+          onEachFeature={onEachFeature}
+          pointToLayer={pointToLayer}
+        />
+      )}
     </>
   );
 };

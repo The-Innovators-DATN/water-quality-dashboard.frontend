@@ -123,6 +123,7 @@ export default function Header() {
                           <Link
                             key={item.id}
                             href={item.path}
+                            onClick={() => setOpen(!isOpen)}
                             className={clsx(
                               "flex items-center gap-x-2 px-3 py-2 rounded hover:bg-gray-100 transition-colors",
                               isActive && "bg-gray-100 font-semibold"

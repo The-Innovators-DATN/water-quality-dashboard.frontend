@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface SidebarState {
   isPinned: boolean;
@@ -8,10 +9,17 @@ interface SidebarState {
   toggleOpen: () => void;
 }
 
-export const useSidebarStore = create<SidebarState>((set) => ({
-  isPinned: false,
-  isOpen: false,
-  setPinned: (pinned) => set({ isPinned: pinned }),
-  setOpen: (open) => set({ isOpen: open }),
-  toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
-}));
+export const useSidebarStore = create<SidebarState>()(
+  persist(
+    (set) => ({
+      isPinned: true,
+      isOpen: true,
+      setPinned: (pinned) => set({ isPinned: pinned }),
+      setOpen: (open) => set({ isOpen: open }),
+      toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
+    }),
+    {
+      name: "sidebar-storage",
+    }
+  )
+);
