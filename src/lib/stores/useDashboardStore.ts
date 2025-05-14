@@ -9,10 +9,20 @@ interface DashboardState {
   interval: number;
   version: number;
   timeRange: { from: Date | string, to: Date | string };
+  timeLabel: string | null;
+  timeStep: number;
+  horizon: number;
+  anomalyEnabled: boolean;
+  forecastEnabled: boolean;
   setWidgets: (widgets: DashboardWidget[] | ((prev: DashboardWidget[]) => DashboardWidget[])) => void;
   setTitle: (title: string) => void;
   setInterval: (interval: number) => void;
   setTimeRange: (range: { from: Date | string, to: Date | string }) => void;
+  setTimeLabel: (timeLabel: string | null) => void;
+  setTimeStep: (timeStep: number) => void;
+  setHorizon: (horizon: number) => void;
+  setAnomalyEnabled: (anomalyEnabled: boolean) => void;
+  setForecastEnabled: (forecastEnabled: boolean) => void;
   addWidget: (widget: DashboardWidget) => void;
   updateWidget: (updated: DashboardWidget) => void;
   removeWidget: (id: string) => void;
@@ -22,6 +32,11 @@ interface DashboardState {
     title: string;
     interval: number;
     timeRange: { from: Date | string, to: Date | string };
+    timeLabel: string | null;
+    timeStep: number;
+    horizon: number;
+    anomalyEnabled: boolean;
+    forecastEnabled: boolean;
     created_by?: number;
   }) => Promise<void>;
   loadDashboard: (uid: string) => Promise<void>;
@@ -35,6 +50,11 @@ export const useDashboardStore = create<DashboardState>()(
       interval: 0,
       version: 1,
       timeRange: { from: new Date(), to: new Date() },
+      timeLabel: null,
+      timeStep: 3600,
+      horizon: 1,
+      anomalyEnabled: false,
+      forecastEnabled: false,
 
       setWidgets: (widgetsOrFn) => {
         const current = get().widgets;
@@ -48,6 +68,11 @@ export const useDashboardStore = create<DashboardState>()(
       setTitle: (title) => set({ title }),
       setInterval: (interval) => set({ interval }),
       setTimeRange: (range) => set({ timeRange: range }),
+      setTimeLabel: (timeLabel) => set({ timeLabel }),
+      setTimeStep: (timeStep) => set({ timeStep }),
+      setHorizon: (horizon) => set({ horizon }),
+      setAnomalyEnabled: (anomalyEnabled) => set({ anomalyEnabled }),
+      setForecastEnabled: (forecastEnabled) => set({ forecastEnabled }),
 
       addWidget: (widget) =>
         set((state) => ({ widgets: [...state.widgets, widget] })),
@@ -101,7 +126,11 @@ export const useDashboardStore = create<DashboardState>()(
                 type: w.type,
                 gridPos: w.gridPos,
                 targets: w.targets,
-                options: w.options,
+                timeLabel: w.timeLabel,
+                timeStep: w.timeStep,
+                horizon: w.horizon,
+                anomalyEnabled: w.anomalyEnabled,
+                forecastEnabled: w.forecastEnabled,
               })),
             },
             status: "active",
@@ -122,7 +151,11 @@ export const useDashboardStore = create<DashboardState>()(
                 type: w.type,
                 gridPos: w.gridPos,
                 targets: w.targets,
-                options: w.options,
+                timeLabel: w.timeLabel,
+                timeStep: w.timeStep,
+                horizon: w.horizon,
+                anomalyEnabled: w.anomalyEnabled,
+                forecastEnabled: w.forecastEnabled,
               })),
             },
             status: "active",

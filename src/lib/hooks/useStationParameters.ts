@@ -12,6 +12,15 @@ export const useStationParameters = (stationId: number) => {
 
   useEffect(() => {
     const fetchParameters = async () => {
+      const storedParameters = localStorage.getItem(`station-${stationId}-parameters`);
+      const storedGrouped = localStorage.getItem(`station-${stationId}-grouped`);
+
+      if (storedParameters && storedGrouped) {
+        setParameters(JSON.parse(storedParameters));
+        setGrouped(JSON.parse(storedGrouped));
+        return;
+      }
+
       const res = await fetch("/api/dashboard/station_parameters/by_target", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,6 +44,9 @@ export const useStationParameters = (stationId: number) => {
       );
 
       setGrouped(grouped);
+
+      localStorage.setItem(`station-${stationId}-parameters`, JSON.stringify(params));
+      localStorage.setItem(`station-${stationId}-grouped`, JSON.stringify(grouped));
     };
 
     if (stationId) fetchParameters();

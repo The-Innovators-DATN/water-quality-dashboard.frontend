@@ -13,7 +13,7 @@ export default function ChartRenderer({ widget }: Props) {
 
   if (loading) return <p>Đang tải biểu đồ...</p>;
   if (!data.length) return <p>Không có dữ liệu biểu đồ.</p>;
-  if (widget.type === "line_chart") return <LineChart datasets={data} />;
+  if (widget.type === "line_chart") return <LineChart datasets={data} timeRange={widget.timeRange} />;
 
   return <p>Biểu đồ chưa hỗ trợ: {widget.type}</p>;
 }

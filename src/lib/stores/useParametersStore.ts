@@ -13,14 +13,12 @@ export interface Parameter {
   status?: string;
 }
 
-// Trạng thái và các hàm hành động cho store
 interface ParametersState {
   parameters: Parameter[];
   setParameters: (params: Parameter[]) => void;
   fetchAllParameters: () => Promise<void>;
 }
 
-// Store Zustand với middleware persist để lưu trữ local
 export const useParametersStore = create<ParametersState>()(
   persist(
     (set) => ({
@@ -50,7 +48,7 @@ export const useParametersStore = create<ParametersState>()(
       },
     }),
     {
-      name: "parameters-store", // tên key lưu ở localStorage
+      name: "parameters-store",
     }
   )
 );

@@ -5,12 +5,12 @@ export interface ChartPoint {
     forecast: boolean;
     label: string;
     color: string;
-  }
+}
   
   export interface Dataset {
     label: string;
     color: string;
     actual: ChartPoint[];
     forecast: ChartPoint[];
-  }
+}
   

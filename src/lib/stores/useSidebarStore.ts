@@ -12,8 +12,8 @@ interface SidebarState {
 export const useSidebarStore = create<SidebarState>()(
   persist(
     (set) => ({
-      isPinned: false,
-      isOpen: false,
+      isPinned: true,
+      isOpen: true,
       setPinned: (pinned) => set({ isPinned: pinned }),
       setOpen: (open) => set({ isOpen: open }),
       toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),

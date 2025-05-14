@@ -1,17 +1,43 @@
 "use client";
 
 import * as d3 from "d3";
+import type { NumberValue } from "d3";
 import { useEffect, useRef, useState } from "react";
 import type { Dataset, ChartPoint } from "@/lib/types/chartType";
 
 interface LineChartProps {
   datasets: Dataset[];
+  timeRange: { from: string | Date, to: string | Date };
 }
 
-export default function LineChart({ datasets }: LineChartProps) {
+function parseRelativeTimeString(relativeStr: string): Date {
+  const now = new Date();
+  if (relativeStr === "now") return now;
+
+  const match = relativeStr.match(/^now-(\d+)([smhdMy])$/);
+  if (!match) return now;
+
+  const [, amountStr, unit] = match;
+  const amount = parseInt(amountStr, 10);
+
+  switch (unit) {
+    case "s": now.setSeconds(now.getSeconds() - amount); break;
+    case "m": now.setMinutes(now.getMinutes() - amount); break;
+    case "h": now.setHours(now.getHours() - amount); break;
+    case "d": now.setDate(now.getDate() - amount); break;
+    case "M": now.setMonth(now.getMonth() - amount); break;
+    case "y": now.setFullYear(now.getFullYear() - amount); break;
+  }
+
+  return now;
+}
+
+export default function LineChart({ datasets, timeRange }: LineChartProps) {
   const ref = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 600, height: 300 });
+  const fromDate = (typeof timeRange.from === "string" ? parseRelativeTimeString(timeRange.from) : timeRange.from);
+  const toDate = (typeof timeRange.to === "string" ? parseRelativeTimeString(timeRange.to) : timeRange.to);
 
   useEffect(() => {
     if (!datasets || datasets.length === 0) return;
@@ -40,12 +66,20 @@ export default function LineChart({ datasets }: LineChartProps) {
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
     const flat = datasets.flatMap((d) => [...d.actual, ...d.forecast]);
 
+    const [startTime, endTime] = [new Date(fromDate), new Date(toDate)];
+    const filteredDatasets = datasets.map(ds => ({
+      ...ds,
+      actual: ds.actual.filter(p => p.timestamp >= startTime && p.timestamp <= endTime),
+      forecast: ds.forecast.filter(p => p.timestamp >= startTime && p.timestamp <= endTime),
+    }));
+    const flatFiltered = filteredDatasets.flatMap(d => [...d.actual, ...d.forecast]);
+
     const x = d3.scaleTime()
-      .domain(d3.extent(flat, (d) => d.timestamp) as [Date, Date])
+      .domain([startTime, endTime])
       .range([0, width]);
 
     const y = d3.scaleLinear()
-      .domain([d3.min(flat, (d) => d.value)! - 1, d3.max(flat, (d) => d.value)! + 1])
+      .domain([d3.min(flatFiltered, (d) => d.value)! - 1, d3.max(flatFiltered, (d) => d.value)! + 1])
       .range([height, 0]);
 
     g.append("g").call(d3.axisLeft(y));
@@ -54,9 +88,9 @@ export default function LineChart({ datasets }: LineChartProps) {
       .call(
         d3.axisBottom(x)
           .ticks(5)
-          .tickFormat((date: Date) => {
-            const [start, end] = d3.extent(flat, (d) => d.timestamp) as [Date, Date];
-            const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+          .tickFormat((domainValue: Date | NumberValue, index: number) => {
+            const date = domainValue as Date;
+            const diffDays = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24);
 
             if (diffDays <= 7) return d3.timeFormat("%d/%m %H:%M")(date);
             if (diffDays <= 183) return d3.timeFormat("%d/%m/%y")(date);
@@ -87,7 +121,7 @@ export default function LineChart({ datasets }: LineChartProps) {
         .style("display", "none");
     }
 
-    datasets.forEach((ds, i) => {
+    filteredDatasets.forEach((ds, i) => {
       const lineGenerator = d3.line<ChartPoint>()
         .x((d) => x(d.timestamp))
         .y((d) => y(d.value));
@@ -111,7 +145,6 @@ export default function LineChart({ datasets }: LineChartProps) {
           .attr("d", lineGenerator);
       }
 
-      // Tooltip area (transparent path)
       const combined = [...ds.actual, ...ds.forecast];
       g.append("path")
         .datum(combined)
@@ -201,12 +234,12 @@ export default function LineChart({ datasets }: LineChartProps) {
 
     const legend = svg.append("g").attr("transform", `translate(${margin.left}, ${chartHeight + 20})`);
 
-    datasets.forEach((ds, i) => {
+    filteredDatasets.forEach((ds, i) => {
       const xOffset = i * 140;
       legend.append("rect").attr("x", xOffset).attr("y", 0).attr("width", 12).attr("height", 12).attr("fill", ds.color);
       legend.append("text").attr("x", xOffset + 18).attr("y", 10).attr("font-size", "12px").text(ds.label);
     });
-  }, [datasets, size]);
+  }, [datasets, size, timeRange]);
 
   useEffect(() => {
     if (!containerRef.current) return;

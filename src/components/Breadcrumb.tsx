@@ -34,7 +34,14 @@ export default function Breadcrumb() {
   if (segments[0] === 'alert' && segments[1] === 'rules' && segments.length === 3) {
     breadcrumbs = [
       { label: 'Cảnh báo', href: '/alert', isLast: false },
-      { label: 'Quy tắc cảnh báo', href: '/alert/rules', isLast: false },
+      { label: 'Quy tắc cảnh báo', href: '/alert/rules', isLast: true },
+      { label: alert?.name || segments[2], href: pathname, isLast: true },
+    ];
+
+  } else if (segments[0] === 'alert' && segments[1] === 'contact-points' && segments.length === 3) {
+    breadcrumbs = [
+      { label: 'Cảnh báo', href: '/alert', isLast: false },
+      { label: 'Điểm liên lạc', href: '/alert/contact-points', isLast: true },
       { label: alert?.name || segments[2], href: pathname, isLast: true },
     ];
   } else {

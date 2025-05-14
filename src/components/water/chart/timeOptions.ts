@@ -41,3 +41,9 @@ export const timeIntervals: TimeIntervalOption[] = [
     { label: "2 giờ", value: 7200 },
     { label: "1 ngày", value: 86400 },
 ];
+
+export function getTimeRangeFromLabel(label: string): { from: string; to: string } {
+    const timeRange = timeRanges.find(range => range.label === label);
+
+    return { from: timeRange?.from ?? "now-1d", to: timeRange?.to ?? "now" };
+}

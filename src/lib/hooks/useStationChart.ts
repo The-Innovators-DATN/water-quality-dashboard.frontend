@@ -1,18 +1,67 @@
 import { useEffect, useState } from "react";
-import { subHours } from "date-fns";
-import { parseTimeRange } from "@/lib/utils/timeHelpers";
 import type { Dataset } from "@/lib/types/chartType";
 import * as d3 from "d3";
 
-export function useStationChart(stationId: number, parameters: any[]) {
+export interface Parameter {
+  id: number;
+  name: string;
+  parameterGroup?: string;
+}
+
+function parseRelativeTimeString(relativeStr: string): Date {
+  const now = new Date();
+  if (relativeStr === "now") return now;
+
+  const match = relativeStr.match(/^now-(\d+)([smhdMy])$/);
+  if (!match) return now;
+
+  const [, amountStr, unit] = match;
+  const amount = parseInt(amountStr, 10);
+
+  switch (unit) {
+    case "s": now.setSeconds(now.getSeconds() - amount); break;
+    case "m": now.setMinutes(now.getMinutes() - amount); break;
+    case "h": now.setHours(now.getHours() - amount); break;
+    case "d": now.setDate(now.getDate() - amount); break;
+    case "M": now.setMonth(now.getMonth() - amount); break;
+    case "y": now.setFullYear(now.getFullYear() - amount); break;
+  }
+
+  return now;
+}
+
+export function useStationChart({
+  stationId,
+  parameters,
+  selectedParams,
+  selectedInterval,
+  timeRange,
+  forecastEnabled,
+  timeStep,
+  horizon,
+  setForecastEnabled,
+  setSelectedParams,
+  setSelectedInterval,
+  setTimeRange,
+  anomalyEnabled,
+  setAnomalyEnabled,
+}: {
+  stationId: number;
+  parameters: Parameter[];
+  selectedParams: string[];
+  selectedInterval: number;
+  timeRange: { from: Date | string; to: Date | string };
+  forecastEnabled: boolean;
+  anomalyEnabled: boolean;
+  timeStep: number;
+  horizon: number;
+  setForecastEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setSelectedParams: React.Dispatch<React.SetStateAction<string[]>>;
+  setSelectedInterval: React.Dispatch<React.SetStateAction<number>>;
+  setTimeRange: React.Dispatch<React.SetStateAction<{ from: Date | string; to: Date | string }>>;
+  setAnomalyEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [selectedParams, setSelectedParams] = useState<string[]>([]);
-  const [selectedInterval, setSelectedInterval] = useState(0);
-  const [selectedRange, setSelectedRange] = useState("now-24h");
-  const [timeRange, setTimeRange] = useState<{ from: Date | string, to: Date | string }>({
-    from: subHours(new Date(), 24),
-    to: new Date(),
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [triggerFetch, setTriggerFetch] = useState(false);
 
@@ -24,6 +73,7 @@ export function useStationChart(stationId: number, parameters: any[]) {
       const selected = selectedParams
         .map((name, index) => {
           const param = parameters.find((p) => p.name === name);
+
           return param
             ? {
                 ref_id: String.fromCharCode(65 + index),
@@ -43,14 +93,15 @@ export function useStationChart(stationId: number, parameters: any[]) {
       const payload = {
         chart_type: "line_chart",
         time_range: {
-          from: typeof timeRange.from === "string"? timeRange.from: timeRange.from.toISOString(),
-          to: typeof timeRange.to === "string"? timeRange.to: timeRange.to.toISOString(),
+          from: typeof timeRange.from === 'string' ? parseRelativeTimeString(timeRange.from) : timeRange.from.toISOString(),
+          to: typeof timeRange.to === 'string' ? parseRelativeTimeString(timeRange.to) : timeRange.to.toISOString(),
         },
         step_seconds: selectedInterval,
+
         forecast: {
-          enabled: true,
-          time_step: 3600,
-          horizon: 5,
+          enabled: forecastEnabled,
+          time_step: timeStep,
+          horizon: horizon,
         },
         series: selected.map((s) => ({
           ref_id: s.ref_id,
@@ -108,7 +159,7 @@ export function useStationChart(stationId: number, parameters: any[]) {
     if (selectedParams.length && stationId) {
       fetchChartData();
     }
-  }, [selectedParams, selectedInterval, timeRange, triggerFetch, stationId]);
+  }, [selectedParams, selectedInterval, timeRange, triggerFetch, stationId, forecastEnabled]);
 
   useEffect(() => {
     if (!selectedParams.length || selectedInterval <= 0) return;
@@ -118,12 +169,7 @@ export function useStationChart(stationId: number, parameters: any[]) {
     }, selectedInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [selectedParams, selectedInterval, timeRange, stationId]);
-
-  useEffect(() => {
-    const { from, to } = parseTimeRange(selectedRange);
-    setTimeRange({ from, to });
-  }, [selectedRange]);
+  }, [selectedParams, selectedInterval, timeRange, stationId, forecastEnabled]);
 
   return {
     datasets,
@@ -132,10 +178,10 @@ export function useStationChart(stationId: number, parameters: any[]) {
     setSelectedParams,
     selectedInterval,
     setSelectedInterval,
-    selectedRange,
-    setSelectedRange,
     timeRange,
     setTimeRange,
     refresh: () => setTriggerFetch((prev) => !prev),
+    forecastEnabled,
+    setForecastEnabled,
   };
 }

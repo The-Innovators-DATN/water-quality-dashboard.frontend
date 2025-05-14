@@ -16,9 +16,13 @@ export interface DashboardWidget {
       display_name: string;
       color: string;
     }[];
-    options?: any;
     timeRange: { from: Date | string, to: Date | string };
     interval: number;
     refreshToken?: number;
+    timeLabel: string | null;
+    timeStep: number;
+    horizon: number;
+    anomalyEnabled: boolean;
+    forecastEnabled: boolean;
 }
   

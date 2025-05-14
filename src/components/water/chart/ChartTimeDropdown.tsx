@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useState, useRef, useEffect } from "react";
 import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
 import Calendar from "react-calendar";
@@ -8,11 +9,14 @@ import { format } from "date-fns";
 import { calculatePopupPosition, PopupPosition } from "@/lib/utils/popupPosition";
 
 interface Props {
-  value: { from: Date | string, to: Date | string };
-  onApply: (from: Date, to: Date) => void;
+  value: { from: Date | string; to: Date | string };
+  timeLabel: string | null;
+  onApply: (from: Date | string, to: Date | string, label: string | null) => void;
 }
 
-function parseRelativeTimeString(relativeStr: string): Date {
+function parseRelativeTimeString(relativeStr: string | Date): Date {
+  if (relativeStr instanceof Date) return relativeStr;
+
   const now = new Date();
   if (relativeStr === "now") return now;
 
@@ -34,97 +38,68 @@ function parseRelativeTimeString(relativeStr: string): Date {
   return now;
 }
 
-export default function ChartTimeDropdown({ value, onApply }: Props) {
+export default function ChartTimeDropdown({ value, onApply, timeLabel }: Props) {
   const fromCalendarRef = useRef<HTMLDivElement>(null);
   const toCalendarRef = useRef<HTMLDivElement>(null);
-
   const containerRef = useRef<HTMLDivElement>(null);
   const fromButtonRef = useRef<HTMLButtonElement>(null);
   const toButtonRef = useRef<HTMLButtonElement>(null);
+  const dropdownButtonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showFromCalendar, setShowFromCalendar] = useState(false);
   const [showToCalendar, setShowToCalendar] = useState(false);
   const [fromCalendarPos, setFromCalendarPos] = useState<PopupPosition | null>(null);
   const [toCalendarPos, setToCalendarPos] = useState<PopupPosition | null>(null);
-
-  const [range, setRange] = useState<{ from: Date | string, to: Date | string }>(() => {
-    const to = new Date();
-    const from = new Date();
-    from.setHours(from.getHours() - 24);
-    return {from, to};
-  });
-
-  useEffect(() => {
-    setRange(value);
-  }, [value]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-        setShowFromCalendar(false);
-        setShowToCalendar(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const applyCustomRange = () => {
-    if (range.from && range.to) {
-      const fromDate = typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from;
-      const toDate = typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to;
-      onApply(fromDate, toDate);
-      setDropdownOpen(false);
-      setShowFromCalendar(false);
-      setShowToCalendar(false);
-    }
-  };
+  const [dropdownPos, setDropdownPos] = useState<PopupPosition | null>(null);
+  const [range, setRange] = useState<{ from: Date | string; to: Date | string }>(value);
 
   const openCalendar = (type: "from" | "to") => {
     const targetRef = type === "from" ? fromButtonRef : toButtonRef;
     if (!targetRef.current) return;
-
     const rect = targetRef.current.getBoundingClientRect();
     const pos = calculatePopupPosition(rect, 320, 320);
 
     if (type === "from") {
       setFromCalendarPos(pos);
-      setShowFromCalendar(true);
+      setShowFromCalendar(!showFromCalendar);
       setShowToCalendar(false);
     } else {
       setToCalendarPos(pos);
       setShowFromCalendar(false);
-      setShowToCalendar(true);
+      setShowToCalendar(!showToCalendar);
     }
   };
 
   useEffect(() => {
-    const handleClickOutsidePopup = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        !fromCalendarRef.current?.contains(target) &&
-        !fromButtonRef.current?.contains(target)
-      ) {
-        setShowFromCalendar(false);
-      }
-  
-      if (
-        !toCalendarRef.current?.contains(target) &&
-        !toButtonRef.current?.contains(target)
-      ) {
-        setShowToCalendar(false);
+    if (dropdownOpen && dropdownButtonRef.current) {
+      const rect = dropdownButtonRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, [dropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
       }
     };
-  
-    document.addEventListener("mousedown", handleClickOutsidePopup);
-    return () => document.removeEventListener("mousedown", handleClickOutsidePopup);
-  }, []);  
+
+    document.addEventListener("click", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="relative inline-block" ref={containerRef}>
       <button
+        ref={dropdownButtonRef}
         onClick={() => {
           setDropdownOpen((prev) => !prev);
           setShowFromCalendar(false);
@@ -133,13 +108,30 @@ export default function ChartTimeDropdown({ value, onApply }: Props) {
         className="h-8 border px-3 py-1 rounded hover:bg-gray-100 flex items-center gap-1"
       >
         <CalendarIcon className="w-4 h-4" />
-        <span>Thời gian</span>
+        <p>
+          {timeLabel
+            ? timeLabel
+            : `${format(
+                typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from,
+                "dd/MM/yyyy HH:mm:ss"
+              )} - ${format(
+                typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to,
+                "dd/MM/yyyy HH:mm:ss"
+              )}`}
+        </p>
         <ChevronDown className="w-4 h-4 text-gray-500" />
       </button>
 
-      {dropdownOpen && (
-        <div className="absolute w-[500px] h-[300px] mt-2 flex bg-white border rounded shadow-lg z-30 p-2 gap-1">
-          <div className="w-[400px] space-y-1">
+      {dropdownOpen && dropdownPos && createPortal(
+        <div 
+          ref={dropdownRef}
+          className="absolute z-10 w-[500px] h-[300px] flex bg-white border rounded shadow-lg mt-2 p-2 gap-1" 
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+          }}
+        >
+          <div className="w-full h-full flex flex-col space-y-1 p-2">
             <p className="font-semibold">Khoảng thời gian</p>
 
             <p>Từ:</p>
@@ -148,7 +140,7 @@ export default function ChartTimeDropdown({ value, onApply }: Props) {
               onClick={() => openCalendar("from")}
               className="w-full text-left px-3 py-2 rounded bg-gray-50 hover:bg-gray-100 border"
             >
-              <p>{format(range.from, "dd/MM/yyyy HH:mm:ss")}</p>
+              <p>{typeof range.from === "string" ? range.from : format(range.from, "dd/MM/yyyy HH:mm:ss")}</p>
             </button>
 
             <p>Đến:</p>
@@ -157,27 +149,22 @@ export default function ChartTimeDropdown({ value, onApply }: Props) {
               onClick={() => openCalendar("to")}
               className="w-full text-left px-3 py-2 rounded bg-gray-50 hover:bg-gray-100 border"
             >
-              <p>{format(range.to, "dd/MM/yyyy HH:mm:ss")}</p>
-            </button>
-
-            <button
-              className="w-full px-3 py-2 rounded bg-blue-600 text-white text-center border"
-              onClick={applyCustomRange}
-            >
-              Áp dụng
+              <p>{typeof range.to === "string" ? range.to : format(range.to, "dd/MM/yyyy HH:mm:ss")}</p>
             </button>
           </div>
 
           <div className="w-[1px] bg-gray-300"></div>
 
-          <div className="w-[200px] h-full overflow-y-scroll">
+          <div className="w-[200px] h-full overflow-y-scroll scrollbar-hide">
             {timeRanges.map((r) => (
               <button
                 key={r.label}
                 className="w-full text-left px-3 py-2 rounded hover:bg-gray-100"
                 onClick={() => {
-                  onApply(parseRelativeTimeString(r.from), parseRelativeTimeString(r.to));
-                  setRange({ from: parseRelativeTimeString(r.from), to: parseRelativeTimeString(r.to)});
+                  const fromDate = parseRelativeTimeString(r.from);
+                  const toDate = parseRelativeTimeString(r.to);
+                  setRange({ from: r.from, to: r.to });
+                  onApply(fromDate, toDate, r.label);
                   setDropdownOpen(false);
                 }}
               >
@@ -185,33 +172,41 @@ export default function ChartTimeDropdown({ value, onApply }: Props) {
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showFromCalendar && fromCalendarPos && (
+      {showFromCalendar && fromCalendarPos && createPortal(
         <div
           ref={fromCalendarRef}
-          className="fixed z-50 bg-white p-2 border rounded shadow-lg text-center"
+          className="fixed z-30 bg-white p-2 border rounded shadow-lg text-center"
           style={{ top: fromCalendarPos.top, left: fromCalendarPos.left, width: 320 }}
         >
           <p className="text-sm text-gray-500">Chọn ngày bắt đầu</p>
           <Calendar
             onChange={(date) => {
               if (date instanceof Date) {
-                setRange({ from: date, to: range.to});
+                setRange({ from: date, to: range.to });
+                onApply(
+                  date,
+                  typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to,
+                  null
+                );
                 setShowFromCalendar(false);
               }
             }}
+            minDate={new Date("1991-01-01")}
             maxDate={typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to}
             value={typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from}
           />
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showToCalendar && toCalendarPos && (
+      {showToCalendar && toCalendarPos && createPortal(
         <div
           ref={toCalendarRef}
-          className="fixed z-50 bg-white p-2 border rounded shadow-lg text-center"
+          className="fixed z-30 bg-white p-2 border rounded shadow-lg text-center"
           style={{ top: toCalendarPos.top, left: toCalendarPos.left, width: 320 }}
         >
           <p className="text-sm text-gray-500">Chọn ngày kết thúc</p>
@@ -220,7 +215,12 @@ export default function ChartTimeDropdown({ value, onApply }: Props) {
               if (date instanceof Date) {
                 const endOfDay = new Date(date);
                 endOfDay.setHours(23, 59, 59, 999);
-                setRange({ from: range.from, to: endOfDay});
+                setRange({ from: range.from, to: endOfDay });
+                onApply(
+                  typeof range.from === "string" ? parseRelativeTimeString(range.from) : range.from,
+                  endOfDay,
+                  null
+                );
                 setShowToCalendar(false);
               }
             }}
@@ -228,7 +228,8 @@ export default function ChartTimeDropdown({ value, onApply }: Props) {
             maxDate={new Date()}
             value={typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

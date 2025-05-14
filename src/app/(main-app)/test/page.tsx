@@ -1,29 +1,57 @@
 "use client";
 
-import GridLayout from "react-grid-layout";
-import { WidthProvider } from "react-grid-layout";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
+import { useEffect, useRef } from "react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
-const ResponsiveGridLayout = WidthProvider(GridLayout);
+const ReportButton = () => {
+  const contentRef = useRef(null);
 
-const layout = [
-  { i: "chart1", x: 0, y: 0, w: 6, h: 4 },
-  { i: "chart2", x: 6, y: 0, w: 6, h: 4 },
-  { i: "chart3", x: 0, y: 4, w: 6, h: 4 },
-];
+  const generatePDF = () => {
+    const element = contentRef.current;
+    
+    // Chụp toàn bộ trang web, bao gồm cả phần cuộn
+    html2canvas(element, {
+      scrollX: 0,
+      scrollY: -window.scrollY,  // Đảm bảo phần cuộn cũng được chụp
+      height: document.documentElement.scrollHeight, // Lấy chiều cao của toàn bộ trang
+      width: document.documentElement.scrollWidth,  // Lấy chiều rộng của toàn bộ trang
+      windowWidth: document.documentElement.scrollWidth, // Lấy chiều rộng của cửa sổ
+      windowHeight: document.documentElement.scrollHeight, // Lấy chiều cao của cửa sổ
+      scale: 2,  // Điều chỉnh độ phân giải
+    }).then((canvas) => {
+      const doc = new jsPDF("p", "mm", "a4");
 
-export default function CustomDashboard() {
+      // Chuyển canvas thành ảnh
+      const imgData = canvas.toDataURL("image/png");
+
+      // Lấy kích thước của ảnh
+      const imgWidth = doc.internal.pageSize.width;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Thêm ảnh vào PDF
+      doc.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
+      // Lưu file PDF
+      doc.save("schedule_report.pdf");
+    });
+  };
+
   return (
-    <ResponsiveGridLayout
-      className="layout border-2 border-gray-300"
-      layout={layout}
-      cols={12}
-      rowHeight={100}
-    >
-      <div key="chart1" className="bg-white shadow rounded">Biểu đồ 1</div>
-      <div key="chart2" className="bg-white shadow rounded">Biểu đồ 2</div>
-      <div key="chart3" className="bg-white shadow rounded">Biểu đồ 3</div>
-    </ResponsiveGridLayout>
+    <div>
+      <div ref={contentRef}>
+        {/* Nội dung của bạn sẽ được xuất ra PDF */}
+        <h1>Báo Cáo Lịch Trình - Chất Lượng Nước</h1>
+        <div>
+          {/* Nội dung trang: văn bản, biểu đồ, bảng,... */}
+          <p>Dữ liệu về pH và chất lượng nước sẽ được xuất dưới dạng bảng hoặc biểu đồ.</p>
+        </div>
+        {/* Các phần tử khác của trang web */}
+      </div>
+
+      <button onClick={generatePDF}>Tải Báo Cáo PDF</button>
+    </div>
   );
-}
+};
+
+export default ReportButton;

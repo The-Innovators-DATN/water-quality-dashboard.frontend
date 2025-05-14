@@ -1,9 +1,8 @@
-// app/api/alert/create/[userId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest, { params }: { params: { userId: string } }) {
   try {
-    const userId = await params.userId
+    const userId = (await params).userId
     const body = await req.json()
 
     const accessToken = req.cookies.get('access_token')?.value;
