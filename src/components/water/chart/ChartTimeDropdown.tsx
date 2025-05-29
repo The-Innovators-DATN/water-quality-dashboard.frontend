@@ -84,7 +84,17 @@ export default function ChartTimeDropdown({ value, onApply, timeLabel }: Props) 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      // If clicked outside the dropdown or calendar
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        fromCalendarRef.current &&
+        !fromCalendarRef.current.contains(event.target as Node) &&
+        toCalendarRef.current &&
+        !toCalendarRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
@@ -229,6 +239,7 @@ export default function ChartTimeDropdown({ value, onApply, timeLabel }: Props) 
             value={typeof range.to === "string" ? parseRelativeTimeString(range.to) : range.to}
           />
         </div>,
+
         document.body
       )}
     </div>

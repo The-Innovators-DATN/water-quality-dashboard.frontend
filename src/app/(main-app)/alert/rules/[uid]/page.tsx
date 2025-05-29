@@ -6,6 +6,7 @@ import { useStationStore } from "@/lib/stores/useStationStore";
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAlertStore } from '@/lib/stores/useAlertStore';
+import { useAuthStore } from '@/lib/stores/useAuthStore';
 
 type Operator = "EQ" | "NEQ" | "GT" | "GTE" | "LT" | "LTE" | "RANGE" | "OUTSIDE_RANGE";
 
@@ -35,6 +36,7 @@ interface Alert {
 
 export default function AlertDetail() {
   const { uid } = useParams();
+  const userId = useAuthStore.getState().getUserId();
   const [data, setData] = useState<Alert | null>(null);
   const [isLoadingAlert, setIsLoadingAlert] = useState(true);
   const [isLoadingParams, setIsLoadingParams] = useState(true);
@@ -48,7 +50,7 @@ export default function AlertDetail() {
   useEffect(() => {
     const fetchDetail = async () => {
       setIsLoadingAlert(true);
-      const res = await fetch(`/api/alert/get/user/11`, { credentials: 'include' });
+      const res = await fetch(`/api/alert/get/user/${userId}`, { credentials: 'include' });
       const json = await res.json();
       if (json.success) {
         const alert = json.data.find((a: Alert) => a.uid === uid);

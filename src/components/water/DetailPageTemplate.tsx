@@ -17,7 +17,7 @@ import {
   Table,
 } from "lucide-react";
 
-import { generateComparisonWidget } from "@/lib/utils/compareHelpers";
+import { generateComparisonPanel } from "@/lib/utils/compareHelpers";
 
 import AlertHistoryTable from "@/components/AlertHistoryTable";
 import LineChart from "@/components/charts/LineChart";
@@ -86,6 +86,7 @@ export default function DetailPageTemplate({
   const [anomalyEnabled, setAnomalyEnabled] = useState<boolean>(stationData.anomalyEnabled || false);
   const [timeStep, setTimeStep] = useState<number>(stationData.timeStep || 3600);
   const [horizon, setHorizon] = useState<number>(stationData.horizon || 5);
+  const [localError, setLocalError] = useState<number>(stationData.localError || 0);
 
   const { parameters, grouped } = useStationParameters(stationId);
   const { datasets, isLoading, refresh } = useStationChart({
@@ -98,12 +99,20 @@ export default function DetailPageTemplate({
     anomalyEnabled,
     timeStep,
     horizon,
+    localError,
     setSelectedParams,
     setSelectedInterval,
     setTimeRange,
     setForecastEnabled,
     setAnomalyEnabled,
+    setLocalError,
   });
+
+  useEffect(() => {
+    if (selectedParams.length === 0 && parameters.length > 0) {
+      setSelectedParams([parameters[0].name]);
+    }
+  }, [parameters]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -130,13 +139,13 @@ export default function DetailPageTemplate({
       horizon,
       forecastEnabled,
       anomalyEnabled,
+      localError,
     };
-
 
     const allStationsData = JSON.parse(localStorage.getItem('stations-data') || '{}');
     allStationsData[stationId] = stationData;
     localStorage.setItem('stations-data', JSON.stringify(allStationsData));
-  }, [stationId, selectedParams, selectedInterval, timeRange, timeLabel, forecastEnabled, anomalyEnabled, timeStep, horizon]);
+  }, [stationId, selectedParams, selectedInterval, timeRange, timeLabel, forecastEnabled, anomalyEnabled, timeStep, horizon, localError]);
 
   const toggleParam = (name: string) => {
     setSelectedParams(
@@ -152,22 +161,36 @@ export default function DetailPageTemplate({
       return;
     }
 
-    const widget = generateComparisonWidget({
+    const panel = generateComparisonPanel({
       stationId,
       selectedParams,
       allParameters,
-      timeRange,
-      interval: selectedInterval,
-      timeLabel,
-      timeStep,
-      horizon,
-      anomalyEnabled,
-      forecastEnabled,
     });
 
-    console.log("Widget data:", widget);
+    const layoutConfiguration = {
+      options: {
+        anomaly: {
+          enabled: anomalyEnabled,
+          local_error_threshold: localError,
+        },
+        forecast: {
+          enabled: forecastEnabled,
+          horizon,
+          time_step: timeStep,
+        },
+      },
+      panels: [panel],
+      refresh: selectedInterval,
+      time: {
+        timeRange: {
+          from: timeRange.from,
+          to: timeRange.to,
+        },
+        timeLabel,
+      },
+    };
 
-    localStorage.setItem("compare:widget", JSON.stringify(widget));
+    localStorage.setItem("compare:layoutConfiguration", JSON.stringify(layoutConfiguration));
     router.push("/dashboard/new");
   };
 
@@ -261,35 +284,25 @@ export default function DetailPageTemplate({
                         setSelectedInterval(val);
                         refresh();
                       }}
-                      onTimeRangeChange={(from, to) => {
+                      onChangeTime={(from, to, label) => {
                         setTimeRange({ from, to });
+                        setTimeLabel(label);
                         refresh();
                       }}
-                      onChangeTimeLabel={(label) => {
-                        setTimeLabel(label);
+                      onOptionsChange={(options) => {
+                        setForecastEnabled(options.forecast.enabled);
+                        setTimeStep(options.forecast.time_step);
+                        setHorizon(options.forecast.horizon);
+                        setAnomalyEnabled(options.anomaly.enabled);
+                        setLocalError(options.anomaly.local_error_threshold);
                         refresh();
                       }}
                       onManualRefresh={refresh}
                       predictionEnabled={forecastEnabled}
-                      onTogglePrediction={(val) => {
-                        setForecastEnabled(val);
-                        refresh();
-                      }}
                       anomalyEnabled={anomalyEnabled}
-                      onToggleAnomaly={(val) => {
-                        setAnomalyEnabled(val);
-                        refresh();
-                      }}
                       timeStep={timeStep}
                       horizon={horizon}
-                      onTimeStepChange={(val) => {
-                        setTimeStep(val);
-                        refresh();
-                      }}
-                      onHorizonChange={(val) => {
-                        setHorizon(val);
-                        refresh();
-                      }}
+                      localError={localError}
                     />
                     <button
                       className="h-8 ml-2 px-3 py-1 border rounded bg-green-500 text-white hover:bg-green-600 whitespace-nowrap"

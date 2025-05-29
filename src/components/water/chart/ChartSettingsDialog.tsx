@@ -11,12 +11,14 @@ interface ChartSettingsDialogProps {
   initialAnomalyEnabled: boolean;
   initialHorizon: number;
   initialTimeStep: number;
+  initialLocalError: number;
   mode: "prediction" | "anomaly";
   onApply: (settings: {
     forecastEnabled?: boolean;
     anomalyEnabled?: boolean;
     horizon?: number;
     timeStep?: number;
+    localError?: number;
   }) => void;
 }
 
@@ -27,6 +29,7 @@ export default function ChartSettingsDialog({
   initialAnomalyEnabled,
   initialHorizon,
   initialTimeStep,
+  initialLocalError,
   mode,
   onApply,
 }: ChartSettingsDialogProps) {
@@ -34,13 +37,16 @@ export default function ChartSettingsDialog({
   const [anomalyEnabled, setAnomalyEnabled] = useState(initialAnomalyEnabled);
   const [horizon, setHorizon] = useState(initialHorizon);
   const [timeStep, setTimeStep] = useState(initialTimeStep);
+  const [localError, setLocalError] = useState(initialLocalError);
 
   useEffect(() => {
     setForecastEnabled(initialForecastEnabled);
     setAnomalyEnabled(initialAnomalyEnabled);
     setHorizon(initialHorizon);
     setTimeStep(initialTimeStep);
+    setLocalError(initialLocalError);
   }, [open]);
+
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
@@ -74,7 +80,7 @@ export default function ChartSettingsDialog({
                 {forecastEnabled && (
                   <>
                     <div>
-                      <label className="block font-medium">Dự đoán trong bao lâu (giờ)</label>
+                      <label className="block font-medium">Số điểm dự đoán</label>
                       <input
                         type="number"
                         className="w-full border px-2 py-1 rounded"
@@ -98,22 +104,51 @@ export default function ChartSettingsDialog({
             )}
 
             {mode === "anomaly" && (
-              <div className="col-span-2 flex justify-between items-center">
-                <span>Bật phát hiện bất thường</span>
-                <Switch
-                  checked={anomalyEnabled}
-                  onChange={setAnomalyEnabled}
-                  className={`${
-                    anomalyEnabled ? "bg-green-500" : "bg-red-500"
-                  } relative inline-flex h-6 w-12 items-center rounded-full transition-colors`}
-                >
-                  <span
+              <>
+                <div className="col-span-2 flex justify-between items-center">
+                  <span>Bật phát hiện bất thường</span>
+                  <Switch
+                    checked={anomalyEnabled}
+                    onChange={setAnomalyEnabled}
                     className={`${
-                      anomalyEnabled ? "translate-x-6" : "translate-x-1"
-                    } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-                  />
-                </Switch>
-              </div>
+                      anomalyEnabled ? "bg-green-500" : "bg-red-500"
+                    } relative inline-flex h-6 w-12 items-center rounded-full transition-colors`}
+                  >
+                    <span
+                      className={`${
+                        anomalyEnabled ? "translate-x-6" : "translate-x-1"
+                      } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                    />
+                  </Switch>
+                </div>
+
+                {anomalyEnabled && (
+                  <div className="col-span-2">
+                    <label className="block font-medium mb-1">Ngưỡng phát hiện bất thường</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={localError}
+                        onChange={(e) => setLocalError(Number(e.target.value))}
+                        className="w-full"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={localError}
+                        onChange={(e) => setLocalError(Number(e.target.value))}
+                        className="w-20 border px-2 py-1 rounded"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -136,6 +171,7 @@ export default function ChartSettingsDialog({
                 } else {
                   onApply({
                     anomalyEnabled,
+                    localError,
                   });
                 }
                 onClose();

@@ -1,20 +1,14 @@
 "use client";
 
-import type { Layout } from "react-grid-layout";
-import {
-  useEffect,
-  useState,
-  useCallback,
-  Fragment,
-  useRef,
-} from "react";
+import { useEffect, useState, useCallback, Fragment, useRef } from "react";
+import { Save, Download } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { WidthProvider } from "react-grid-layout";
+import { Layout, WidthProvider } from "react-grid-layout";
 import GridLayout from "react-grid-layout";
 import { Dialog, Transition, DialogPanel, DialogTitle } from "@headlessui/react";
-import { DashboardWidget } from "@/lib/types/dashboard";
+import { DashboardPanel } from "@/lib/types/dashboard";
 import ChartToolbar from "@/components/water/chart/ChartToolbar";
 import ChartConfigDialog from "@/components/dashboard/ChartConfigDialog";
 import { useDashboardStore } from "@/lib/stores/useDashboardStore";
@@ -25,7 +19,7 @@ import html2canvas from "html2canvas";
 const ChartRenderer = dynamic(() => import("@/components/dashboard/ChartRenderer"), { ssr: false });
 const ResponsiveGridLayout = WidthProvider(GridLayout);
 
-function getNextGridPosition(widgets: DashboardWidget[], cols = 12, w = 6, h = 4) {
+function getNextGridPosition(widgets: DashboardPanel[], cols = 12, w = 6, h = 4) {
   const positions = widgets.map((wid) => wid.gridPos);
   const maxY = Math.max(0, ...positions.map((p) => p.y + p.h));
   for (let y = 0; y <= maxY; y++) {
@@ -46,50 +40,19 @@ type Props = {
 
 export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
   const contentRef = useRef(null);
-
-  const generatePDF = () => {
-    const element = contentRef.current;
-
-    if (element) {
-      html2canvas(element).then((canvas) => {
-        const doc = new jsPDF({
-          unit: "mm",
-          format: [canvas.width, canvas.height],
-          orientation: "landscape",
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-
-        const imgWidth = doc.internal.pageSize.width;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        doc.setFontSize(80);
-        const titleWidth = doc.getTextWidth(title);
-        const titleX = (doc.internal.pageSize.width - titleWidth) / 2;
-        doc.text(title, titleX, 50);
-
-        doc.addImage(imgData, "PNG", 0, 80, imgWidth, imgHeight);
-
-        doc.save("dashboard.pdf");
-      });
-    }
-  };
-
   const router = useRouter();
   const userId = useAuthStore.getState().getUserId();
+
   const {
-    widgets, setWidgets, addWidget, updateWidget, removeWidget, reset,
-    title, setTitle, interval, setInterval, timeRange, setTimeRange,
-    timeLabel, setTimeLabel, timeStep, setTimeStep, horizon, setHorizon,
-    anomalyEnabled, setAnomalyEnabled, forecastEnabled, setForecastEnabled,
-    saveDashboard, loadDashboard
+    layoutConfiguration, updateLayoutConfiguration, addPanel, updatePanel, removePanel, reset, name, setName, saveDashboard, loadDashboard
   } = useDashboardStore();
 
-  const [editingWidget, setEditingWidget] = useState<DashboardWidget | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<DashboardPanel | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [widgetToDelete, setWidgetToDelete] = useState<DashboardWidget | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [widgetToDelete, setWidgetToDelete] = useState<DashboardPanel | null>(null);
+  const [isEditing, setIsEditing] = useState(true);
 
   const [stations, setStations] = useState<{ id: number; name: string }[]>([]);
   const [filteredStations, setFilteredStations] = useState<{ id: number; name: string }[]>([]);
@@ -103,37 +66,21 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
   }, [isEditMode, dashboardUid]);
 
   useEffect(() => {
-    const widgetStr = localStorage.getItem("compare:widget");
-    if (widgetStr) {
+    const layoutConfigurationStr = localStorage.getItem("compare:layoutConfiguration");
+    if (layoutConfigurationStr) {
       try {
-        const widget = JSON.parse(widgetStr);
-        if (widget) {
+        const layoutConfiguration = JSON.parse(layoutConfigurationStr);
+        if (layoutConfiguration) {
           reset();
 
-          addWidget({
-            ...widget,
-            id: `widget-${Date.now()}`,
-            gridPos: getNextGridPosition([]),
-            timeRange: widget.timeRange,
-            interval: widget.interval,
-            targets: widget.targets,
-            timeLabel: widget.timeLabel,
-            timeStep: widget.timeStep,
-            horizon: widget.horizon,
-            anomalyEnabled: widget.anomalyEnabled,
-            forecastEnabled: widget.forecastEnabled,
-          });
-          setTimeRange(widget.timeRange);
-          setInterval(widget.interval);
-          setTimeLabel(widget.timeLabel);
-          setTimeStep(widget.timeStep);
-          setHorizon(widget.horizon);
-          setAnomalyEnabled(widget.anomalyEnabled);
-          setForecastEnabled(widget.forecastEnabled);
+          updateLayoutConfiguration("options", layoutConfiguration.options);
+          updateLayoutConfiguration("panels", layoutConfiguration.panels);
+          updateLayoutConfiguration("refresh", layoutConfiguration.refresh);
+          updateLayoutConfiguration("time", layoutConfiguration.time);
         }
-        localStorage.removeItem("compare:widget");
+        localStorage.removeItem("compare:layoutConfiguration");
       } catch (err) {
-        console.error("Lỗi parse widget từ localStorage:", err);
+        console.error("Lỗi parse layout configuration từ localStorage:", err);
       }
     }
   }, []);
@@ -149,21 +96,40 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
       .catch(err => console.error("Lỗi fetch trạm:", err));
   }, []);
 
+  const generatePDF = () => {
+    const element = contentRef.current;
+
+    if (element) {
+      setIsGeneratingPDF(true);
+
+      html2canvas(element).then((canvas) => {
+        const doc = new jsPDF({
+          unit: "mm",
+          format: [canvas.width, canvas.height],
+          orientation: "landscape",
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+
+        const imgWidth = doc.internal.pageSize.width;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        doc.setFontSize(80);
+        const titleWidth = doc.getTextWidth(name);
+        const titleX = (doc.internal.pageSize.width - titleWidth) / 2;
+        doc.text(name, titleX, 50);
+
+        doc.addImage(imgData, "PNG", 0, 80, imgWidth, imgHeight);
+
+        doc.save("dashboard.pdf");
+      }).finally(() => setIsGeneratingPDF(false));
+    }
+  };
+
   const handleSaveDashboard = async () => {
     try {
       setIsSaving(true);
-      await saveDashboard({
-        uid: isEditMode ? dashboardUid : undefined,
-        title,
-        interval,
-        timeRange,
-        timeLabel,
-        timeStep,
-        horizon,
-        anomalyEnabled,
-        forecastEnabled,
-        created_by: userId!,
-      });
+      await saveDashboard(isEditMode ? dashboardUid : undefined);
 
       if (!dashboardUid) {
         useDashboardStore.getState().reset();
@@ -182,29 +148,22 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
   const handleLayoutChange = useCallback(
     (layout: Layout[]) => {
       if (!isEditing) return;
-      const updated = widgets.map((w) => {
+      const updated = layoutConfiguration.panels.map((w) => {
         const pos = layout.find((l: any) => l.i === w.id);
         return pos ? { ...w, gridPos: { x: pos.x, y: pos.y, w: pos.w, h: pos.h } } : w;
       });
-      setWidgets(updated);
+      updateLayoutConfiguration("panels", updated);
     },
-    [isEditing, widgets]
+    [isEditing, layoutConfiguration.panels]
   );
 
   const handleAddWidget = () => {
-    const newWidget: DashboardWidget = {
+    const newWidget: DashboardPanel = {
       id: `widget-${Date.now()}`,
       title: "Biểu đồ mới",
       type: "line_chart",
-      gridPos: getNextGridPosition(widgets),
+      gridPos: getNextGridPosition(layoutConfiguration.panels),
       targets: [],
-      timeRange,
-      interval,
-      timeLabel: null,
-      timeStep: 3600,
-      horizon: 1,
-      anomalyEnabled: true,
-      forecastEnabled: true,
     };
     setEditingWidget(newWidget);
     setShowDialog(true);
@@ -216,102 +175,40 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
         <div className="w-1/3 flex items-center gap-2">
           <input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="w-[200px] text-xl font-bold bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-500"
           />
-          <button onClick={() => {
-            handleSaveDashboard();
-            generatePDF();
-          }} className="p-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-            Lưu dashboard
+          <button onClick={handleSaveDashboard} className="p-2 rounded-lg border border-2">
+            <Save size={16} />
+          </button>
+          <button onClick={generatePDF} className="p-2 rounded-lg border border-2">
+            <Download size={16} />
           </button>
         </div>
-        <div className="w-2/3 flex gap-2 items-center">
+        <div className="w-2/3 flex gap-2 justify-end">
           <ChartToolbar
-            interval={interval}
-            timeRange={timeRange}
-            timeLabel={timeLabel}
-            timeStep={timeStep}
-            horizon={horizon}
-            anomalyEnabled={anomalyEnabled}
-            predictionEnabled={forecastEnabled}
-            onChangeTimeLabel={(val) => {
-              setTimeLabel(val);
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  timeLabel: val,
-                }))
-              );
+            interval={layoutConfiguration.refresh}
+            timeRange={layoutConfiguration.time.timeRange}
+            timeLabel={layoutConfiguration.time.timeLabel}
+            timeStep={layoutConfiguration.options.forecast.time_step}
+            horizon={layoutConfiguration.options.forecast.horizon}
+            anomalyEnabled={layoutConfiguration.options.anomaly.enabled}
+            predictionEnabled={layoutConfiguration.options.forecast.enabled}
+            localError={layoutConfiguration.options.anomaly.local_error_threshold}
+            onChangeTime={(from, to, label) => {
+              updateLayoutConfiguration("time", { ...layoutConfiguration.time, timeLabel: label, timeRange: { from, to } })
             }}
-            onIntervalChange={(val) => {
-              setInterval(val);
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  interval: val,
-                }))
-              );
-            }}
-            onTimeStepChange={(val) => {
-              setTimeStep(val);
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  timeStep: val,
-                }))
-              );
-            }}
-            onHorizonChange={(val) => {
-              setHorizon(val);
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  horizon: val,
-                }))
-              );
-            }}
-            onToggleAnomaly={(val) => {
-              setAnomalyEnabled(val);
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  anomalyEnabled: val,
-                }))
-              );
-            }}
-            onTogglePrediction={(val) => {
-              setForecastEnabled(val);
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  forecastEnabled: val,
-                }))
-              );
-            }}
-            onManualRefresh={() => {
-              setWidgets((prev) =>
-                prev.map((w) => ({ ...w, refreshToken: Date.now() }))
-              );
-            }}
-            onTimeRangeChange={(from, to) => {
-              setTimeRange({ from, to });
-              setWidgets((prev) =>
-                prev.map((w) => ({
-                  ...w,
-                  timeRange: { from, to },
-                }))
-              );
-            }}
+            onIntervalChange={(val) => updateLayoutConfiguration("refresh", val)}
+            onOptionsChange={(val) => updateLayoutConfiguration("options", val)}
+            onManualRefresh={() => updateLayoutConfiguration("panels", layoutConfiguration.panels.map((w) => ({ ...w, refreshToken: Date.now() })))}
           />
-
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               className="sr-only peer"
               checked={isEditing}
-              onChange={() => setIsEditing(prev => !prev)}
+              onChange={() => setIsEditing((prev) => !prev)}
             />
             <div className={`w-16 h-8 flex items-center rounded-full p-1 transition-colors duration-300 ${isEditing ? "bg-green-500" : "bg-red-500"}`}>
               <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${isEditing ? "translate-x-8" : "translate-x-0"}`} />
@@ -336,10 +233,10 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
           onLayoutChange={handleLayoutChange}
           draggableCancel="button"
         >
-          {widgets.map((w) => (
+          {layoutConfiguration.panels.map((w) => (
             <div key={w.id} data-grid={w.gridPos} className="w-full h-full border rounded bg-white shadow p-4 relative">
               <h2 className="font-semibold text-sm mb-2 truncate">{w.title}</h2>
-              <ChartRenderer key={w.refreshToken ?? w.id} widget={w} />
+              <ChartRenderer key={w.refreshToken ?? w.id} panel={w} timeRange={layoutConfiguration.time.timeRange} refresh={layoutConfiguration.refresh} options={layoutConfiguration.options} />
               {isEditing && (
                 <>
                   <button
@@ -371,10 +268,10 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
         <ChartConfigDialog
           open={showDialog}
           onClose={() => setShowDialog(false)}
-          widget={editingWidget}
-          onSave={(w) => {
-            const exists = widgets.some((x) => x.id === w.id);
-            exists ? updateWidget(w) : addWidget(w);
+          panel={editingWidget}
+          onSave={(p) => {
+            const exists = layoutConfiguration.panels.some((x) => x.id === p.id);
+            exists ? updatePanel(p) : addPanel(p);
             setShowDialog(false);
             setEditingWidget(null);
           }}
@@ -395,7 +292,7 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
                   <div className="flex justify-end gap-2">
                     <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setShowDeleteDialog(false)}>Huỷ</button>
                     <button className="px-4 py-2 bg-red-600 text-white rounded" onClick={() => {
-                      removeWidget(widgetToDelete.id);
+                      removePanel(widgetToDelete.id);
                       setShowDeleteDialog(false);
                       setWidgetToDelete(null);
                     }}>Xoá</button>
@@ -406,7 +303,8 @@ export default function DashboardEditor({ isEditMode, dashboardUid }: Props) {
           </Dialog>
         </Transition>
       )}
-      {isSaving && (
+
+      {(isSaving || isGeneratingPDF) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>

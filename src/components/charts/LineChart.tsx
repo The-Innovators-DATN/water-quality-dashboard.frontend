@@ -10,6 +10,17 @@ interface LineChartProps {
   timeRange: { from: string | Date, to: string | Date };
 }
 
+function darkenColor(hex: string, amount: number = 0.2): string {
+  const rgb = d3.color(hex);
+  if (!rgb || !(rgb instanceof d3.rgb)) return hex;
+
+  const hsl = d3.hsl(rgb);
+  hsl.s = Math.min(1, hsl.s + amount);
+  hsl.l = Math.max(0, hsl.l - amount);
+
+  return hsl.formatHex();
+}
+
 function parseRelativeTimeString(relativeStr: string): Date {
   const now = new Date();
   if (relativeStr === "now") return now;
@@ -36,6 +47,7 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
   const ref = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 600, height: 300 });
+
   const fromDate = (typeof timeRange.from === "string" ? parseRelativeTimeString(timeRange.from) : timeRange.from);
   const toDate = (typeof timeRange.to === "string" ? parseRelativeTimeString(timeRange.to) : timeRange.to);
 
@@ -44,13 +56,13 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
 
     datasets.forEach(ds => {
       ds.actual.forEach(p => {
-        if (!(p.timestamp instanceof Date)) {
-          p.timestamp = new Date(p.timestamp);
+        if (!(p.datetime instanceof Date)) {
+          p.datetime = new Date(p.datetime);
         }
       });
       ds.forecast.forEach(p => {
-        if (!(p.timestamp instanceof Date)) {
-          p.timestamp = new Date(p.timestamp);
+        if (!(p.datetime instanceof Date)) {
+          p.datetime = new Date(p.datetime);
         }
       });
     });
@@ -69,17 +81,30 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
     const [startTime, endTime] = [new Date(fromDate), new Date(toDate)];
     const filteredDatasets = datasets.map(ds => ({
       ...ds,
-      actual: ds.actual.filter(p => p.timestamp >= startTime && p.timestamp <= endTime),
-      forecast: ds.forecast.filter(p => p.timestamp >= startTime && p.timestamp <= endTime),
+      actual: ds.actual.filter(p => p.datetime >= startTime && p.datetime <= endTime),
+      forecast: ds.forecast,
     }));
     const flatFiltered = filteredDatasets.flatMap(d => [...d.actual, ...d.forecast]);
 
+    const flatActual = filteredDatasets.flatMap(d => d.actual);
+    const flatForecast = filteredDatasets.flatMap(d => d.forecast);
+
+    const maxActualdatetime = d3.max(flatActual, d => d.datetime) ?? endTime;
+    const maxForecastdatetime = d3.max(flatForecast, d => d.datetime) ?? endTime;
+
+    const maxdatetime = maxActualdatetime > maxForecastdatetime ? maxActualdatetime : maxForecastdatetime;
+
     const x = d3.scaleTime()
-      .domain([startTime, endTime])
+      .domain([startTime, maxdatetime > endTime ? maxdatetime : endTime])
       .range([0, width]);
 
+    const values = flatFiltered.map(d => d.value).filter((v): v is number => typeof v === "number");
+    const minVal = d3.min(values) ?? 0;
+    const maxVal = d3.max(values) ?? 0;
+    const padding = (maxVal - minVal) * 0.1 || 0.0001;
+    
     const y = d3.scaleLinear()
-      .domain([d3.min(flatFiltered, (d) => d.value)! - 1, d3.max(flatFiltered, (d) => d.value)! + 1])
+      .domain([minVal - padding, maxVal + padding])
       .range([height, 0]);
 
     g.append("g").call(d3.axisLeft(y));
@@ -92,7 +117,7 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
             const date = domainValue as Date;
             const diffDays = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24);
 
-            if (diffDays <= 7) return d3.timeFormat("%d/%m %H:%M")(date);
+            if (diffDays <= 7) return d3.timeFormat("%d/%m %H:%M:%S")(date);
             if (diffDays <= 183) return d3.timeFormat("%d/%m/%y")(date);
             return d3.timeFormat("%m/%Y")(date);
           })
@@ -123,7 +148,7 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
 
     filteredDatasets.forEach((ds, i) => {
       const lineGenerator = d3.line<ChartPoint>()
-        .x((d) => x(d.timestamp))
+        .x((d) => x(d.datetime))
         .y((d) => y(d.value));
 
       // Vẽ actual
@@ -145,6 +170,50 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
           .attr("d", lineGenerator);
       }
 
+      if (ds.actual.length > 0 && ds.forecast.length > 0) {
+        const lastActual = ds.actual[ds.actual.length - 1];
+        const firstForecast = ds.forecast[0];
+        g.append("path")
+          .datum([lastActual, firstForecast])
+          .attr("fill", "none")
+          .attr("stroke", ds.color)
+          .attr("stroke-width", 2)
+          .attr("d", d3.line<ChartPoint>()
+            .x(d => x(d.datetime))
+            .y(d => y(d.value))
+          );
+      }
+      
+      filteredDatasets.forEach((ds) => {
+        const allPoints = [...ds.actual, ...ds.forecast];
+
+        const safeClass = `point-${ds.label.replace(/\s+/g, '-')}`;
+        const escapedClass = CSS.escape(safeClass);
+      
+        g.selectAll(`.${escapedClass}`)
+          .data(allPoints)
+          .join("circle")
+          .attr("class", safeClass)
+          .attr("cx", d => x(d.datetime))
+          .attr("cy", d => y(d.value))
+          .attr("r", 4)
+          .attr("fill", d => d.forecast ? "orange" : ds.color)
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 1.5);
+
+        allPoints
+        .filter(p => p.pointAnomaly)
+        .forEach((p) => {
+          g.append("circle")
+            .attr("cx", x(p.datetime))
+            .attr("cy", y(p.value))
+            .attr("r", 8)
+            .attr("fill", "none")
+            .attr("stroke", "red")
+            .attr("stroke-width", 2);
+        });
+      });      
+
       const combined = [...ds.actual, ...ds.forecast];
       g.append("path")
         .datum(combined)
@@ -160,7 +229,7 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
           let minDist = Infinity;
 
           for (const point of combined) {
-            const dist = Math.abs(point.timestamp.getTime() - mxTime.getTime());
+            const dist = Math.abs(point.datetime.getTime() - mxTime.getTime());
             if (dist < minDist) {
               closest = point;
               minDist = dist;
@@ -170,7 +239,7 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
           if (!closest || !tooltipDiv || !containerRef.current) return;
 
           highlightCircle
-            .attr("cx", x(closest.timestamp))
+            .attr("cx", x(closest.datetime))
             .attr("cy", y(closest.value))
             .style("display", "block");
 
@@ -190,8 +259,8 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
             .style("display", "block")
             .html(`
               <div><strong>${closest.label}</strong></div>
-              <div>${d3.timeFormat("%d/%m/%y %H:%M")(closest.timestamp)}</div>
-              <div>Giá trị: ${closest.value.toFixed(2)} ${closest.forecast ? "(dự đoán)" : ""}</div>
+              <div>${d3.timeFormat("%d/%m/%y %H:%M:%S")(closest.datetime)}</div>
+              <div>Giá trị: ${closest.value} ${closest.forecast ? "(dự đoán)" : ""}</div>
             `);
         })
         .on("mouseleave", () => {
@@ -207,26 +276,28 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
         .attr("stroke-width", 1.5)
         .style("display", "none");
 
-      // Draw red lines for anomalies (from previous point to anomaly, and from anomaly to next point if available)
       for (let j = 0; j < combined.length; j++) {
-        if (combined[j].anomaly) {
+        if (combined[j].trendAnomaly) {
           if (j > 0) {
             g.append("line")
-              .attr("x1", x(combined[j - 1].timestamp))
-              .attr("y1", y(combined[j - 1].value))
-              .attr("x2", x(combined[j].timestamp))
-              .attr("y2", y(combined[j].value))
-              .attr("stroke", "red")
-              .attr("stroke-width", 2);
+            .attr("x1", x(combined[j - 1].datetime))
+            .attr("y1", y(combined[j - 1].value))
+            .attr("x2", x(combined[j].datetime))
+            .attr("y2", y(combined[j].value))
+            .attr("stroke", darkenColor(combined[j].color))
+            .attr("stroke-width", 6)
+            .attr("stroke-linecap", "round");
           }
           if (j < combined.length - 1) {
             g.append("line")
-              .attr("x1", x(combined[j].timestamp))
+              .attr("x1", x(combined[j].datetime))
               .attr("y1", y(combined[j].value))
-              .attr("x2", x(combined[j + 1].timestamp))
+              .attr("x2", x(combined[j + 1].datetime))
               .attr("y2", y(combined[j + 1].value))
-              .attr("stroke", "red")
-              .attr("stroke-width", 2);
+              .attr("stroke", darkenColor(combined[j].color))
+              .attr("stroke-width", 6)
+              .attr("stroke-opacity", 0.6)
+              .attr("stroke-linecap", "round");
           }
         }
       }
@@ -239,7 +310,28 @@ export default function LineChart({ datasets, timeRange }: LineChartProps) {
       legend.append("rect").attr("x", xOffset).attr("y", 0).attr("width", 12).attr("height", 12).attr("fill", ds.color);
       legend.append("text").attr("x", xOffset + 18).attr("y", 10).attr("font-size", "12px").text(ds.label);
     });
-  }, [datasets, size, timeRange]);
+
+    const legendX = filteredDatasets.length * 140;
+    
+    const hasForecast = datasets.some(ds => ds.forecast.length > 0);
+
+    if (hasForecast) {
+      legend.append("line")
+        .attr("x1", legendX)
+        .attr("y1", 6)
+        .attr("x2", legendX + 30)
+        .attr("y2", 6)
+        .attr("stroke", "black")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "6 4");
+
+      legend.append("text")
+        .attr("x", legendX + 36)
+        .attr("y", 10)
+        .attr("font-size", "12px")
+        .text("Dự đoán");
+    }
+      }, [datasets, size, timeRange]);
 
   useEffect(() => {
     if (!containerRef.current) return;

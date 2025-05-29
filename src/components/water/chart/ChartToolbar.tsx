@@ -11,16 +11,13 @@ interface ChartToolbarProps {
   timeLabel: string | null;
   timeStep: number;
   horizon: number;
-  onTimeStepChange: (val: number) => void;
-  onHorizonChange: (val: number) => void;
-  onChangeTimeLabel: (label: string | null) => void;
+  localError: number;
+  onChangeTime: (from: Date | string, to: Date | string, label: string | null) => void;
   onIntervalChange: (val: number) => void;
   onManualRefresh: () => void;
-  onTimeRangeChange: (from: Date | string, to: Date | string) => void;
   predictionEnabled: boolean;
-  onTogglePrediction: (enabled: boolean) => void;
   anomalyEnabled: boolean;
-  onToggleAnomaly: (enabled: boolean) => void;
+  onOptionsChange: (options: { forecast: { enabled: boolean; time_step: number; horizon: number }; anomaly: { enabled: boolean; local_error_threshold: number } }) => void;
 }
 
 export default function ChartToolbar({
@@ -29,16 +26,13 @@ export default function ChartToolbar({
   timeLabel,
   timeStep,
   horizon,
-  onTimeStepChange,
-  onHorizonChange,
-  onChangeTimeLabel,
+  localError,
+  onChangeTime,
   onIntervalChange,
   onManualRefresh,
-  onTimeRangeChange,
   predictionEnabled,
-  onTogglePrediction,
   anomalyEnabled,
-  onToggleAnomaly,
+  onOptionsChange,
 }: ChartToolbarProps) {
   const [showPredictionDialog, setShowPredictionDialog] = useState(false);
   const [showAnomalyDialog, setShowAnomalyDialog] = useState(false);
@@ -49,8 +43,7 @@ export default function ChartToolbar({
         value={timeRange}
         timeLabel={timeLabel}
         onApply={(from, to, label) => {
-          onTimeRangeChange(from, to)
-          onChangeTimeLabel(label)
+          onChangeTime(from, to, label)
         }}
       />
 
@@ -112,10 +105,12 @@ export default function ChartToolbar({
         initialAnomalyEnabled={anomalyEnabled}
         initialHorizon={horizon}
         initialTimeStep={timeStep}
+        initialLocalError={localError}
         onApply={({ forecastEnabled, horizon, timeStep }) => {
-          onTogglePrediction(forecastEnabled!);
-          onHorizonChange(horizon!);
-          onTimeStepChange(timeStep!);
+          onOptionsChange({
+            forecast: { enabled: forecastEnabled!, time_step: timeStep!, horizon: horizon! },
+            anomaly: { enabled: anomalyEnabled, local_error_threshold: localError },
+          });
         }}
         mode="prediction"
       />
@@ -127,10 +122,15 @@ export default function ChartToolbar({
         initialAnomalyEnabled={anomalyEnabled}
         initialHorizon={horizon}
         initialTimeStep={timeStep}
-        onApply={({ forecastEnabled, horizon, timeStep }) => {
-          onTogglePrediction(forecastEnabled!);
-          onHorizonChange(horizon!);
-          onTimeStepChange(timeStep!);
+        initialLocalError={localError}
+        onApply={(settings) => {
+          onOptionsChange({
+            forecast: { enabled: predictionEnabled, time_step: timeStep, horizon: horizon },
+            anomaly: { 
+              enabled: settings.anomalyEnabled ?? anomalyEnabled, 
+              local_error_threshold: (settings.localError ?? localError) 
+            },
+          });
         }}
         mode="anomaly"
       />

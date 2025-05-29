@@ -1,28 +1,28 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPages = ["/login", "/register", "/forgot-password", "/reset-password"];
+// const publicPages = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+//   const { pathname } = request.nextUrl;
 
-  const token = request.cookies.get("access_token")?.value;
+  // const token = request.cookies.get("access_token")?.value;
 
-  if (!publicPages.includes(pathname) && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+//   if (!publicPages.includes(pathname) && !token) {
+//     return NextResponse.redirect(new URL("/login", request.url));
+//   }
 
-  if ((pathname === "/login" || 
-       pathname === "/register" || 
-       pathname === "/forgot-password" || 
-       pathname.startsWith("/reset-password")) && 
-      token) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+//   if ((pathname === "/login" || 
+//        pathname === "/register" || 
+//        pathname === "/forgot-password" || 
+//        pathname.startsWith("/reset-password")) && 
+//       token) {
+//     return NextResponse.redirect(new URL("/", request.url));
+//   }
 
-  if (pathname === "/alert/rules") {
-    return NextResponse.redirect(new URL("/alert", request.url));
-  }
+//   if (pathname === "/alert/rules") {
+//     return NextResponse.redirect(new URL("/alert", request.url));
+//   }
 
   return NextResponse.next();
 }

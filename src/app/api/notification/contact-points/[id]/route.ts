@@ -4,17 +4,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const id = (await params).id;
 
   try {
-    const accessToken = req.cookies.get('access_token')?.value;
-
-    if (!accessToken) {
-        return NextResponse.json({ error: 'No access token' }, { status: 401 })
-    };
-
     const res = await fetch(`http://103.172.79.28:8000/api/notification/contact-points/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
       },
     });
 
@@ -34,19 +27,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const id = (await params).id;
 
   try {
-    const accessToken = req.cookies.get('access_token')?.value;
-
-    if (!accessToken) {
-        return NextResponse.json({ error: 'No access token' }, { status: 401 })
-    };
-
     const body = await req.json();
 
     const res = await fetch(`http://103.172.79.28:8000/api/notification/contact-points/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
       },
       body: JSON.stringify(body),
     });
@@ -73,12 +59,6 @@ export async function DELETE(
   const id = (await params).id;
 
   try {
-    const accessToken = req.cookies.get('access_token')?.value;
-
-    if (!accessToken) {
-        return NextResponse.json({ error: 'No access token' }, { status: 401 })
-    };
-
     const res = await fetch(`http://103.172.79.28:8000/api/notification/contact-points/${id}`, {
       method: "DELETE",
       headers: {

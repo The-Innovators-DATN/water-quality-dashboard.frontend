@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import type { Dataset } from "@/lib/types/chartType";
-import { DashboardWidget } from "@/lib/types/dashboard";
+import { DashboardPanel } from "@/lib/types/dashboard";
 
 function parseRelativeTimeString(relativeStr: string): Date {
   const now = new Date();
@@ -24,31 +24,45 @@ function parseRelativeTimeString(relativeStr: string): Date {
   return now;
 }
 
-export function useWidgetChart(widget: DashboardWidget) {
+type Options = {
+  forecast: {
+    enabled: boolean;
+    time_step: number;
+    horizon: number;
+  };
+  anomaly: {
+    enabled: boolean;
+    local_error_threshold: number;
+  };
+};
+
+export function usePanelChart(panel: DashboardPanel, timeRange: { from: Date | string, to: Date | string }, refresh: number, options: Options) {
   const [data, setData] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const interval = widget.interval || 0;
-
-  const { from, to } = widget.timeRange;
-
   const fetchChartData = async () => {
-    if (!from || !to) {
-      console.error("Invalid time range values", { from, to, targets: widget.targets });
+    if (!timeRange.from || !timeRange.to) {
+      console.error("Invalid time range values", { from: timeRange.from, to: timeRange.to, targets: panel.targets });
       return;
     }
 
     setLoading(true);
     try {
       const payload = {
-        chart_type: widget.type,
+        chart_type: panel.type,
         time_range: {
-          from: typeof from === "string"? parseRelativeTimeString(from): from.toISOString(),
-          to: typeof to === "string"? parseRelativeTimeString(to): to.toISOString(),
+          from: typeof timeRange.from === "string" ? parseRelativeTimeString(timeRange.from) : timeRange.from,
+          to: typeof timeRange.to === "string" ? parseRelativeTimeString(timeRange.to) : timeRange.to,
         },
-        step_seconds: interval,
-        forecast: widget.options?.forecast ?? { enabled: false },
-        series: widget.targets.map((t) => ({
+        step_seconds: 1,
+        forecast: options.forecast ?? { enabled: false },
+        anomaly: options.anomaly
+          ? {
+              ...options.anomaly,
+              local_error_threshold: options.anomaly.local_error_threshold / 100,
+            }
+          : { enabled: false },
+        series: panel.targets.map((t) => ({
           ref_id: t.refId,
           target_type: 1,
           target_id: t.target_id,
@@ -65,23 +79,25 @@ export function useWidgetChart(widget: DashboardWidget) {
       const result = await res.json();
       const results = result.results || [];
 
-      const datasets: Dataset[] = widget.targets.map((t) => {
+      const datasets: Dataset[] = panel.targets.map((t) => {
         const found = results.find((r: any) => r.refId === t.refId);
         return {
           label: t.display_name,
           color: t.color,
           actual: found?.series?.map((d: any) => ({
-            timestamp: new Date(d.datetime),
+            datetime: new Date(d.datetime),
             value: d.value,
-            anomaly: d.trendAnomaly,
+            trendAnomaly: d.trendAnomaly,
+            pointAnomaly: d.pointAnomaly,
             forecast: false,
             label: t.display_name,
             color: t.color,
           })) || [],
           forecast: found?.forecast?.map((d: any) => ({
-            timestamp: new Date(d.datetime),
+            datetime: new Date(d.datetime),
             value: d.value,
-            anomaly: d.trendAnomaly,
+            trendAnomaly: d.trendAnomaly,
+            pointAnomaly: d.pointAnomaly,
             forecast: true,
             label: t.display_name,
             color: t.color,
@@ -91,7 +107,7 @@ export function useWidgetChart(widget: DashboardWidget) {
 
       setData(datasets);
     } catch (err) {
-      console.error("Lỗi fetch widget chart:", err);
+      console.error("Lỗi fetch panel chart:", err);
     } finally {
       setLoading(false);
     }
@@ -99,29 +115,17 @@ export function useWidgetChart(widget: DashboardWidget) {
 
   useEffect(() => {
     fetchChartData();
-  }, [
-    from,
-    to,
-    interval,
-    widget.type,
-    widget.targets,
-  ]);
+  }, [timeRange, refresh, options]);
 
   useEffect(() => {
-    if (interval <= 0) return;
+    if (refresh <= 0) return;
 
-    const auto = setInterval(() => {
+    const interval = setInterval(() => {
       fetchChartData();
-    }, interval * 1000);
+    }, refresh * 1000);
 
-    return () => clearInterval(auto);
-  }, [
-    from,
-    to,
-    interval,
-    widget.type,
-    widget.targets,
-  ]);
+    return () => clearInterval(interval);
+  }, [timeRange, refresh, options]);
 
   return { data, loading };
 }

@@ -90,7 +90,78 @@ export default function AlertPage() {
 }
 
 function SentAlerts() {
-  return <div className="p-2 text-gray-600">Danh sách các cảnh báo đã gửi.</div>;
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch(`/api/notification/notifications`, {
+          credentials: "include",
+        });
+        const json = await res.json();
+        if (json.success) {
+          setNotifications(json.data.items ?? []);
+        }
+      } catch (err) {
+        toast.error("Không thể tải thông báo");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  return (
+    <div className="p-2 text-gray-600">
+      {isLoading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-gray-500 text-sm">Đang tải dữ liệu...</div>
+          </div>
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="text-gray-500 text-sm">Không có thông báo nào.</div>
+      ) : (
+        <table className="w-full table-auto text-sm mb-4">
+          <thead>
+            <tr className="text-left border-b">
+              <th className="p-2">Tên</th>
+              <th className="p-2">Mô tả</th>
+              <th className="p-2">Loại</th>
+              <th className="p-2">Trạng thái</th>
+              <th className="p-2">Cập nhật</th>
+            </tr>
+          </thead>
+          <tbody>
+            {notifications.map((notification) => (
+              <tr key={notification.id} className="border-b hover:bg-gray-100">
+                <td className="p-2 max-w-[200px] truncate">{notification.subject}</td>
+                <td className="p-2 max-w-[200px] whitespace-pre-line">{notification.body}</td>
+                <td className="p-2 capitalize">{notification.type}</td>
+                <td className="p-2 whitespace-nowrap">
+                  {notification.status === "success" ? (
+                    <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
+                      Thành công
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700">
+                      Thất bại
+                    </span>
+                  )}
+                </td>
+                <td className="p-2 whitespace-nowrap">
+                  {new Date(notification.updated_at).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
 }
 
 function ContactPoints() {

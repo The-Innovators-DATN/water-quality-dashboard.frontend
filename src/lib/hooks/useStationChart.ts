@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Dataset } from "@/lib/types/chartType";
 import * as d3 from "d3";
+import { point } from "leaflet";
 
 export interface Parameter {
   id: number;
@@ -45,6 +46,8 @@ export function useStationChart({
   setTimeRange,
   anomalyEnabled,
   setAnomalyEnabled,
+  localError,
+  setLocalError
 }: {
   stationId: number;
   parameters: Parameter[];
@@ -55,11 +58,13 @@ export function useStationChart({
   anomalyEnabled: boolean;
   timeStep: number;
   horizon: number;
+  localError: number;
   setForecastEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedParams: React.Dispatch<React.SetStateAction<string[]>>;
   setSelectedInterval: React.Dispatch<React.SetStateAction<number>>;
   setTimeRange: React.Dispatch<React.SetStateAction<{ from: Date | string; to: Date | string }>>;
   setAnomalyEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setLocalError: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,12 +101,16 @@ export function useStationChart({
           from: typeof timeRange.from === 'string' ? parseRelativeTimeString(timeRange.from) : timeRange.from.toISOString(),
           to: typeof timeRange.to === 'string' ? parseRelativeTimeString(timeRange.to) : timeRange.to.toISOString(),
         },
-        step_seconds: selectedInterval,
+        step_seconds: 1,
 
         forecast: {
           enabled: forecastEnabled,
           time_step: timeStep,
           horizon: horizon,
+        },
+        anomaly: {
+          enabled: anomalyEnabled,
+          local_error_threshold: localError / 100,
         },
         series: selected.map((s) => ({
           ref_id: s.ref_id,
@@ -128,19 +137,17 @@ export function useStationChart({
           color: s.color,
           actual:
             found?.series?.map((d: any) => ({
-              timestamp: new Date(d.datetime),
+              datetime: new Date(d.datetime),
               value: d.value,
-              anomaly: d.trendAnomaly,
-              forecast: false,
+              trendAnomaly: d.trendAnomaly,
+              pointAnomaly: d.pointAnomaly,
               label: s.display_name,
               color: s.color,
             })) || [],
           forecast:
             found?.forecast?.map((d: any) => ({
-              timestamp: new Date(d.datetime),
+              datetime: new Date(d.datetime),
               value: d.value,
-              anomaly: d.trendAnomaly,
-              forecast: true,
               label: s.display_name,
               color: s.color,
             })) || [],
