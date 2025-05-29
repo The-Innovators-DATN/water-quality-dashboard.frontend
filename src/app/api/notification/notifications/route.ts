@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
-  const { userId } = await params;
-
+export async function GET(req: NextRequest) {
   try {
-    const res = await fetch(`http://103.172.79.28:8000/api/notification/contact-points/user/${userId}`, {
+    const res = await fetch(`http://103.172.79.28:8000/api/notification/notifications`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -13,9 +11,11 @@ export async function GET(req: NextRequest, { params }: { params: { userId: stri
 
     const data = await res.json();
 
+    console.log(data);
+
     if (!res.ok || !data.success) {
       return NextResponse.json(
-        { success: false, message: data.message || "Lỗi khi lấy danh sách điểm liên lạc" },
+        { success: false, message: data.message || "Lỗi khi lấy danh sách thông báo" },
         { status: res.status }
       );
     }

@@ -5,6 +5,17 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
+const operatorMapping: Record<string, string> = {
+  EQ: "Bằng",
+  NEQ: "Khác",
+  GT: "Lớn hơn",
+  GTE: "Lớn hơn hoặc bằng",
+  LT: "Nhỏ hơn",
+  LTE: "Nhỏ hơn hoặc bằng",
+  RANGE: "Trong khoảng",
+  OUTSIDE_RANGE: "Ngoài khoảng",
+};
+
 export default function PolicyDetailPage() {
   const userId = useAuthStore.getState().getUserId();
   
@@ -106,15 +117,12 @@ export default function PolicyDetailPage() {
           <span className="text-sm font-medium">Toán tử điều kiện</span>
           <select
             className="mt-1 block w-full border border-gray-300 rounded px-2 py-1"
-            value={data.operator}
-            onChange={(e) => setData({ ...data, operator: e.target.value })}
+            value={data.condition_type}
+            onChange={(e) => setData({ ...data, condition_type: e.target.value })}
           >
-            <option value="=">Bằng (=)</option>
-            <option value="!=">Khác (!=)</option>
-            <option value=">">Lớn hơn (&gt;)</option>
-            <option value=">=">Lớn hơn hoặc bằng (&ge;)</option>
-            <option value="<">Nhỏ hơn (&lt;)</option>
-            <option value="<=">Nhỏ hơn hoặc bằng (&le;)</option>
+            {Object.entries(operatorMapping).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
           </select>
         </label>
   

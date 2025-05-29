@@ -7,12 +7,6 @@ export async function GET(
   const { userId } = await params;
 
   try {
-    const access_token = req.cookies.get("access_token")?.value;
-
-    if (!access_token) {
-      return NextResponse.json({ success: false, message: "No access token" }, { status: 401 });
-    }
-
     const res = await fetch(`http://103.172.79.28:8000/api/notification/policies/user/${userId}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },

@@ -1,7 +1,8 @@
 export interface ChartPoint {
-    timestamp: Date;
+    datetime: Date;
     value: number;
-    anomaly: boolean;
+    trendAnomaly: boolean;
+    pointAnomaly: boolean;
     forecast: boolean;
     label: string;
     color: string;

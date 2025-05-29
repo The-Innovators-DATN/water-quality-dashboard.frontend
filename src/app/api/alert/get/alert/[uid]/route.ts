@@ -7,18 +7,11 @@ export async function GET(
   const { uid } = await params;
 
   try {
-    const accessToken = req.cookies.get('access_token')?.value;
-        
-    if (!accessToken) {
-        return NextResponse.json({ error: 'No access token found' }, { status: 401 });
-    }
-
     const response = await fetch(`http://103.172.79.28:8000/api/alert/get/alert/${uid}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
       },
     });
 

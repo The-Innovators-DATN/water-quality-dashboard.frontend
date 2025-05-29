@@ -1,167 +1,182 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { DashboardWidget } from "@/lib/types/dashboard";
+import type { DashboardPanel } from "@/lib/types/dashboard";
 import { useAuthStore } from "@/lib/stores/useAuthStore";
+import { getTimeRangeFromLabel } from "@/components/water/chart/timeOptions";
 
 interface DashboardState {
-  widgets: DashboardWidget[];
-  title: string;
-  interval: number;
+  layoutConfiguration: {
+    options: {
+      anomaly: {
+        enabled: boolean;
+        local_error_threshold: number;
+      },
+      forecast: {
+        enabled: boolean;
+        horizon: number;
+        time_step: number;
+      },
+    },
+    panels: DashboardPanel[],
+    refresh: number,
+    time: {
+      timeRange: {
+        from: Date | string;
+        to: Date | string;
+      },
+      timeLabel: string | null;
+    }
+  };
+  name: string;
   version: number;
-  timeRange: { from: Date | string, to: Date | string };
-  timeLabel: string | null;
-  timeStep: number;
-  horizon: number;
-  anomalyEnabled: boolean;
-  forecastEnabled: boolean;
-  setWidgets: (widgets: DashboardWidget[] | ((prev: DashboardWidget[]) => DashboardWidget[])) => void;
-  setTitle: (title: string) => void;
-  setInterval: (interval: number) => void;
-  setTimeRange: (range: { from: Date | string, to: Date | string }) => void;
-  setTimeLabel: (timeLabel: string | null) => void;
-  setTimeStep: (timeStep: number) => void;
-  setHorizon: (horizon: number) => void;
-  setAnomalyEnabled: (anomalyEnabled: boolean) => void;
-  setForecastEnabled: (forecastEnabled: boolean) => void;
-  addWidget: (widget: DashboardWidget) => void;
-  updateWidget: (updated: DashboardWidget) => void;
-  removeWidget: (id: string) => void;
+  status: "active" | "inactive" | "deleted";
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+
+  updateLayoutConfiguration: (key: string, value: any) => void;
+
+  setName: (name: string) => void;
+  setStatus: (status: "active" | "inactive" | "deleted") => void;
+  addPanel: (panel: DashboardPanel) => void;
+  updatePanel: (updated: DashboardPanel) => void;
+  removePanel: (id: string) => void;
   reset: () => void;
-  saveDashboard: (params: {
-    uid?: string;
-    title: string;
-    interval: number;
-    timeRange: { from: Date | string, to: Date | string };
-    timeLabel: string | null;
-    timeStep: number;
-    horizon: number;
-    anomalyEnabled: boolean;
-    forecastEnabled: boolean;
-    created_by?: number;
-  }) => Promise<void>;
+  saveDashboard: (uid?: string) => Promise<void>;
   loadDashboard: (uid: string) => Promise<void>;
 }
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set, get) => ({
-      widgets: [],
-      title: "Bảng điều khiển mới",
-      interval: 0,
+      layoutConfiguration: {
+        options: {
+          anomaly: {
+            enabled: false,
+            local_error_threshold: 0,
+          },
+          forecast: {
+            enabled: false,
+            horizon: 1,
+            time_step: 3600,
+          },
+        },
+        panels: [],
+        refresh: 0,
+        time: {
+          timeRange: { from: new Date(), to: new Date() },
+          timeLabel: null,
+        },
+      },
+      name: "Bảng điều khiển mới",
       version: 1,
-      timeRange: { from: new Date(), to: new Date() },
-      timeLabel: null,
-      timeStep: 3600,
-      horizon: 1,
-      anomalyEnabled: false,
-      forecastEnabled: false,
+      status: "active",
+      createdBy: useAuthStore.getState().getUserId?.(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
 
-      setWidgets: (widgetsOrFn) => {
-        const current = get().widgets;
-        const newWidgets =
-          typeof widgetsOrFn === "function"
-            ? widgetsOrFn(current)
-            : widgetsOrFn;
-        set({ widgets: newWidgets });
+      updateLayoutConfiguration: (key: string, value: any) => set((state) => {
+        if (key === 'options') {
+          return { layoutConfiguration: { ...state.layoutConfiguration, options: value } };
+        }
+        if (key === 'panels') {
+          return { layoutConfiguration: { ...state.layoutConfiguration, panels: value } };
+        }
+        if (key === 'time') {
+          return { layoutConfiguration: { ...state.layoutConfiguration, time: value } };
+        }
+        if (key === 'refresh') {
+          return { layoutConfiguration: { ...state.layoutConfiguration, refresh: value } };
+        }
+        return state;
+      }),
+
+      // Set the name of the dashboard
+      setName: (name: string) => set({ name }),
+
+      // Set the status of the dashboard
+      setStatus: (status: "active" | "inactive" | "deleted") => set({ status }),
+
+      // Add a new panel
+      addPanel: (panel: DashboardPanel) =>
+        set((state) => ({ layoutConfiguration: { ...state.layoutConfiguration, panels: [...state.layoutConfiguration.panels, panel] } })),
+
+      // Update an existing panel
+      updatePanel: (updated: DashboardPanel) => {
+        set((state) => ({
+          layoutConfiguration: {
+            ...state.layoutConfiguration,
+            panels: state.layoutConfiguration.panels.map((panel) =>
+              panel.id === updated.id ? updated : panel
+            ),
+          },
+        }));
       },
 
-      setTitle: (title) => set({ title }),
-      setInterval: (interval) => set({ interval }),
-      setTimeRange: (range) => set({ timeRange: range }),
-      setTimeLabel: (timeLabel) => set({ timeLabel }),
-      setTimeStep: (timeStep) => set({ timeStep }),
-      setHorizon: (horizon) => set({ horizon }),
-      setAnomalyEnabled: (anomalyEnabled) => set({ anomalyEnabled }),
-      setForecastEnabled: (forecastEnabled) => set({ forecastEnabled }),
-
-      addWidget: (widget) =>
-        set((state) => ({ widgets: [...state.widgets, widget] })),
-
-      updateWidget: (updated) => {
+      // Remove a panel
+      removePanel: (id: string) =>
         set((state) => ({
-          widgets: state.widgets.map((w) =>
-            w.id === updated.id ? updated : w
-          ),
-        }))
-      },
-
-      removeWidget: (id) =>
-        set((state) => ({
-          widgets: state.widgets.filter((w) => w.id !== id),
+          layoutConfiguration: {
+            ...state.layoutConfiguration,
+            panels: state.layoutConfiguration.panels.filter((panel) => panel.id !== id),
+          },
         })),
 
+      // Reset the dashboard state
       reset: () => {
         localStorage.removeItem("dashboard-draft");
-        set({
-          widgets: [],
-          title: "",
-          interval: 0,
-          timeRange: { from: new Date(), to: new Date() },
-          version: 1,
-        })
       },
 
-      saveDashboard: async ({ uid, title, interval, timeRange }) => {
-        const widgets = get().widgets;
+      // Save the dashboard to the backend
+      saveDashboard: async (uid?: string) => {
         const currentVersion = get().version;
-      
         const userId = useAuthStore.getState().getUserId?.();
         if (!userId) throw new Error("Không tìm thấy userId từ Auth Store");
-      
-        const from = typeof timeRange.from === "string"? timeRange.from: timeRange.from.toISOString();
-        const to = typeof timeRange.to === "string"? timeRange.to: timeRange.to.toISOString();
-      
-        const nextVersion = uid ? currentVersion + 1 : 1;
-      
+
+        const nextVersion = currentVersion + 1;
+
         const createPayload = {
           dashboard: {
-            name: title || "Bảng điều khiển mới",
+            name: get().name || "Bảng điều khiển mới",
             description: "Mô tả bảng điều khiển",
             layout_configuration: {
-              time: { from, to },
-              refresh: `${interval}s`,
-              panels: widgets.map((w, idx) => ({
+              time: get().layoutConfiguration.time,
+              refresh: get().layoutConfiguration.refresh,
+              options: get().layoutConfiguration.options,
+              panels: get().layoutConfiguration.panels.map((w, idx) => ({
                 id: typeof w.id === "number" ? w.id : idx + 1,
                 title: w.title,
                 type: w.type,
                 gridPos: w.gridPos,
                 targets: w.targets,
-                timeLabel: w.timeLabel,
-                timeStep: w.timeStep,
-                horizon: w.horizon,
-                anomalyEnabled: w.anomalyEnabled,
-                forecastEnabled: w.forecastEnabled,
               })),
             },
             status: "active",
             created_by: userId,
-          }
+          },
         };
 
         const updatePayload = {
           dashboard: {
-            name: title || "Bảng điều khiển mới",
+            name: get().name || "Bảng điều khiển mới",
             description: "Mô tả bảng điều khiển",
             layout_configuration: {
-              time: { from, to },
-              refresh: `${interval}s`,
-              panels: widgets.map((w, idx) => ({
+              time: get().layoutConfiguration.time,
+              refresh: get().layoutConfiguration.refresh,
+              options: get().layoutConfiguration.options,
+              panels: get().layoutConfiguration.panels.map((w, idx) => ({
                 id: typeof w.id === "number" ? w.id : idx + 1,
                 title: w.title,
                 type: w.type,
                 gridPos: w.gridPos,
                 targets: w.targets,
-                timeLabel: w.timeLabel,
-                timeStep: w.timeStep,
-                horizon: w.horizon,
-                anomalyEnabled: w.anomalyEnabled,
-                forecastEnabled: w.forecastEnabled,
               })),
             },
             status: "active",
           },
           created_by: userId,
         };
+
         const res = await fetch(
           uid ? `/api/dashboard/dashboards/${uid}` : "/api/dashboard/dashboards",
           {
@@ -171,19 +186,19 @@ export const useDashboardStore = create<DashboardState>()(
             body: JSON.stringify(uid ? updatePayload : createPayload),
           }
         );
-      
+
         if (!res.ok) {
           const result = await res.json();
           throw new Error(result?.message || "Lỗi khi lưu dashboard");
         }
-      
+
         set({ version: nextVersion });
 
-        uid ? useDashboardStore.getState().loadDashboard(uid): useDashboardStore.getState().reset();
-      },  
+        uid ? useDashboardStore.getState().loadDashboard(uid) : useDashboardStore.getState().reset();
+      },
 
       loadDashboard: async (uid: string) => {
-        const userId = useAuthStore.getState().getUserId();
+        const userId = useAuthStore.getState().getUserId() || 0;
         const res = await fetch(`/api/dashboard/dashboards/${uid}?created_by=${userId}`, {
           credentials: "include",
         });
@@ -194,27 +209,50 @@ export const useDashboardStore = create<DashboardState>()(
         }
 
         const dashboard = result.data;
-
         const layout = dashboard.layoutConfiguration;
-        const refresh = parseInt(layout.refresh.replace("s", "") ?? "0");
+        const refresh = layout.refresh;
 
         useDashboardStore.getState().reset();
 
+        const timeLabel = layout.time.timeLabel;
+
+        if (timeLabel) {
+          const { from, to } = getTimeRangeFromLabel(timeLabel);
+          layout.time.timeRange = { from, to };
+        }
+
         set({
-          title: dashboard.name,
-          interval: refresh,
+          name: dashboard.name,
           version: dashboard.version ?? 1,
-          timeRange: layout.time,
-          widgets: layout.panels.map((panel: any, idx: number) => ({
-            id: `widget-${idx}`,
-            title: panel.title,
-            type: panel.type,
-            gridPos: panel.gridPos,
-            targets: panel.targets,
-            options: panel.options,
-            interval: refresh,
-            timeRange: layout.time,
-          })),
+          layoutConfiguration: {
+            time: {
+              timeRange: layout.time.timeRange,
+              timeLabel: layout.time.timeLabel,
+            },
+            refresh: refresh,
+            options: {
+              anomaly: {
+                enabled: layout.options.anomaly.enabled,
+                local_error_threshold: layout.options.anomaly.local_error_threshold,
+              },
+              forecast: {
+                enabled: layout.options.forecast.enabled,
+                time_step: layout.options.forecast.time_step,
+                horizon: layout.options.forecast.horizon,
+              },
+            },
+            panels: layout.panels.map((panel: any, idx: number) => ({
+              id: panel.id,
+              title: panel.title,
+              type: panel.type,
+              gridPos: panel.gridPos,
+              targets: panel.targets,
+            })),
+          },
+          status: dashboard.status,
+          createdBy: dashboard.createdBy,
+          createdAt: dashboard.createdAt,
+          updatedAt: dashboard.updatedAt,
         });
       },
     }),

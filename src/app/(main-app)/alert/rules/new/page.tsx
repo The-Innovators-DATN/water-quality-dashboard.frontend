@@ -81,7 +81,7 @@ export default function NewAlertRulePage() {
   const handleSubmit = async () => {
     let payload: any = {
       name: form.name,
-      userId: userId,
+      // userId: userId,
       stationId: form.station,
       message: form.message,
       silenced: form.silenced,

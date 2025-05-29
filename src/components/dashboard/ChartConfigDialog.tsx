@@ -2,14 +2,14 @@
 
 import { Dialog, DialogPanel, DialogTitle, Transition } from "@headlessui/react";
 import { Fragment, useState, useEffect, useMemo } from "react";
-import { DashboardWidget } from "@/lib/types/dashboard";
+import { DashboardPanel } from "@/lib/types/dashboard";
 import MultiSelect from "@/components/ui/MultiSelect";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  widget: DashboardWidget;
-  onSave: (updated: DashboardWidget) => void;
+  panel: DashboardPanel;
+  onSave: (updated: DashboardPanel) => void;
   stations: { id: number; name: string }[];
   parameters: { id: number; name: string }[];
 }
@@ -19,7 +19,7 @@ const defaultColors = ["#ff5733", "#33c1ff", "#8e44ad", "#27ae60", "#f39c12"];
 export default function ChartConfigDialog({
   open,
   onClose,
-  widget,
+  panel,
   onSave,
   stations,
   parameters,
@@ -28,7 +28,7 @@ export default function ChartConfigDialog({
   const [selectedParamIds, setSelectedParamIds] = useState<number[]>([]);
   const [availableParameters, setAvailableParameters] = useState<{ id: number; name: string }[]>([]);
   const [colorMap, setColorMap] = useState<Record<string, string>>({});
-  const [title, setTitle] = useState(widget.title || "");
+  const [title, setTitle] = useState(panel.title || "");
 
   // Derived station options
   const stationOptions = useMemo(() => stations.map(s => ({ label: s.name, value: s.id })), [stations]);
@@ -50,13 +50,13 @@ export default function ChartConfigDialog({
 
   // Init dialog state from widget
   useEffect(() => {
-    if (!widget) return;
+    if (!panel) return;
 
-    const stationIds = Array.from(new Set(widget.targets.map(t => Number(t.target_id))));
-    const paramIds = Array.from(new Set(widget.targets.map(t => Number(t.metric_id))));
+    const stationIds = Array.from(new Set(panel.targets.map(t => Number(t.target_id))));
+    const paramIds = Array.from(new Set(panel.targets.map(t => Number(t.metric_id))));
     const initialColors: Record<string, string> = {};
 
-    widget.targets.forEach(t => {
+    panel.targets.forEach(t => {
       const key = `${t.target_id}-${t.metric_id}`;
       initialColors[key] = t.color;
     });
@@ -64,7 +64,7 @@ export default function ChartConfigDialog({
     setSelectedStationIds(stationIds);
     setSelectedParamIds(paramIds);
     setColorMap(initialColors);
-  }, [widget]);
+  }, [panel]);
 
   // Fetch params by selected stations
   useEffect(() => {
@@ -127,7 +127,7 @@ export default function ChartConfigDialog({
     );
 
     onSave({
-      ...widget,
+      ...panel,
       title: title || "Biểu đồ mới",
       targets: newTargets,
     });

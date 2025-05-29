@@ -2,18 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const accessToken = req.cookies.get("access_token")?.value;
-
-    if (!accessToken) {
-      return NextResponse.json({ error: "No access token found" }, { status: 401 });
-    }
     const body = await req.json();
 
     const response = await fetch("http://103.172.79.28:8000/api/dashboard/dashboards", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
       },
       body: JSON.stringify(body),
     });
@@ -32,11 +26,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const accessToken = req.cookies.get("access_token")?.value;
-
-  if (!accessToken) {
-    return NextResponse.json({ error: "No access token found" }, { status: 401 });
-  }
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("created_by");
 
@@ -46,11 +35,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const response = await fetch(
-      `http://103.172.79.28:8000/api/dashboard/dashboards?created_by=${userId}`, {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-        }
-      }
+      `http://103.172.79.28:8000/api/dashboard/dashboards?created_by=${userId}`
     );
 
     if (!response.ok) {

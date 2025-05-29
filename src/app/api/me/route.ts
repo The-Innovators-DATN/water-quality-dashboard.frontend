@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest,) {
-    const accessToken = req.cookies.get('access_token')?.value;
-
-    if (!accessToken) {
-        return NextResponse.json({ error: 'No access token' }, { status: 401 })
-    }
-
     try {
+        const token = req.cookies.get('access_token')?.value
         const res = await fetch('http://103.172.79.28:8000/api/user/users/me', {
+            method: 'GET',
             headers: {
-                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
             },
         })
 
